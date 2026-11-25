@@ -737,6 +737,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val smsCountTxt = actionView?.findViewById<TextView>(R.id.notification_badge)
         smsCountTxt?.text = "$count"
         smsCountTxt?.visibility = if (count > 0) View.VISIBLE else View.GONE
+        val label = getString(R.string.notifications)
+        actionView?.contentDescription = if (count > 0) "$label, $count" else label
         actionView?.setOnClickListener(onClickListener)
     }
 

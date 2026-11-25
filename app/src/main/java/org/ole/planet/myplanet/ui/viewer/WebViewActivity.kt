@@ -12,7 +12,6 @@ import android.webkit.CookieManager
 import android.webkit.GeolocationPermissions
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
-import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
@@ -243,10 +242,6 @@ class WebViewActivity : AppCompatActivity() {
                 applyNightMode(view)
             }
 
-            override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
-                super.onReceivedError(view, request, error)
-            }
-
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
                 if (assetLoader != null) {
                     val response = assetLoader.shouldInterceptRequest(request.url)
@@ -330,6 +325,9 @@ class WebViewActivity : AppCompatActivity() {
     }
 
     companion object {
+        internal fun headerTitle(passedTitle: String?, pageTitle: String): String? =
+            pageTitle.takeIf { passedTitle.isNullOrBlank() && it.isNotBlank() }
+
         internal fun encodedEntryPath(dir: File, entryRelativePath: String?): String? {
             val indexFile = FileUtils.resolveHtmlEntryFile(dir, entryRelativePath)?.takeIf { it.exists() } ?: return null
             return indexFile.relativeTo(dir.canonicalFile).invariantSeparatorsPath.split("/").joinToString("/") { Uri.encode(it) }
@@ -357,7 +355,9 @@ class WebViewActivity : AppCompatActivity() {
 
             override fun onReceivedTitle(view: WebView, title: String) {
                 val sanitizedTitle = title.take(100).filter { it.isLetterOrDigit() || it.isWhitespace() || it in ".,!?-_" }
-                activityWebViewBinding.contentWebView.webTitle.text = sanitizedTitle
+                headerTitle(intent.getStringExtra("title"), sanitizedTitle)?.let {
+                    activityWebViewBinding.contentWebView.webTitle.text = it
+                }
                 super.onReceivedTitle(view, sanitizedTitle)
             }
 

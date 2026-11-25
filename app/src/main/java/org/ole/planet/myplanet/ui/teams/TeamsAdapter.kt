@@ -30,6 +30,7 @@ class TeamsAdapter(
     private var actionLeaveString: String? = null
     private var actionRequestedString: String? = null
     private var actionRequestToJoinString: String? = null
+    private var feedbackString: String? = null
     private var pendingColor: Int = 0
 
     init {
@@ -49,6 +50,7 @@ class TeamsAdapter(
             actionLeaveString = context.getString(R.string.leave)
             actionRequestedString = context.getString(R.string.requested)
             actionRequestToJoinString = context.getString(R.string.request_to_join)
+            feedbackString = context.getString(R.string.feedback)
             pendingColor = ContextCompat.getColor(context, R.color.pending_request_indicator)
         }
         val binding = ItemTeamListBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -77,6 +79,7 @@ class TeamsAdapter(
                 onItemClick(team)
             }
 
+            btnFeedback.contentDescription = "$feedbackString ${team.name}"
             btnFeedback.setOnClickListener {
                 onFeedbackClick(team)
             }
