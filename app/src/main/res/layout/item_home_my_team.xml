@@ -3,9 +3,18 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="@dimen/dashboard_chip_width"
     android:layout_height="match_parent"
-    android:background="@drawable/bg_dashboard_chip">
+    android:background="@drawable/bg_dashboard_chip"
+    android:padding="@dimen/dashboard_hairline_width">
 
+    <ImageView
+        android:id="@+id/cover"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@null"
+        android:scaleType="centerCrop"
+        android:visibility="invisible" />
     <LinearLayout
+        android:id="@+id/content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
@@ -29,6 +38,20 @@
             android:textSize="11.5sp" />
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/coverTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="@color/dashboard_chip_cover_strip"
+        android:ellipsize="end"
+        android:maxLines="2"
+        android:paddingHorizontal="@dimen/dashboard_chip_padding"
+        android:paddingVertical="6dp"
+        android:textColor="@color/dashboard_chip_cover_title"
+        android:textSize="11.5sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

@@ -32,6 +32,8 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
+import org.ole.planet.myplanet.utils.AttachmentReader
+import org.ole.planet.myplanet.utils.UriAttachment
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
@@ -43,12 +45,16 @@ class TeamFragment : BaseBindingFragment<FragmentTeamBinding>(FragmentTeamBindin
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
+    @Inject
+    lateinit var attachmentReader: AttachmentReader
+    private val coverPicker = TeamCoverPicker(this)
     private val viewModel: TeamViewModel by viewModels()
     var type: String? = null
     private var fromDashboard: Boolean = false
     var user: UserEntity? = null
     private lateinit var teamListAdapter: TeamsAdapter
     private var conditionApplied: Boolean = false
+    private var teamToReveal: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -82,6 +88,7 @@ class TeamFragment : BaseBindingFragment<FragmentTeamBinding>(FragmentTeamBindin
             .setTitle(String.format(getString(R.string.enter) + "%s " + getString(R.string.detail), if (type == null) getString(R.string.team) else type))
             .setView(alertCreateTeamBinding.root).setPositiveButton(getString(R.string.save), null).setNegativeButton(getString(R.string.cancel), null)
         val dialog = builder.create()
+        dialog.setOnDismissListener { coverPicker.unbind() }
 
         dialog.setOnShowListener {
             val okButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
@@ -93,6 +100,7 @@ class TeamFragment : BaseBindingFragment<FragmentTeamBinding>(FragmentTeamBindin
     }
 
     private fun setupTeamAlertUI(team: TeamDetails?) {
+        coverPicker.bind(alertCreateTeamBinding, team?._id, team?.imageName, team?.rev)
         if (TextUtils.equals(type, "enterprise")) {
             alertCreateTeamBinding.spnTeamType.visibility = View.GONE
             alertCreateTeamBinding.etDescription.hint = getString(R.string.entMission)
@@ -137,10 +145,11 @@ class TeamFragment : BaseBindingFragment<FragmentTeamBinding>(FragmentTeamBindin
             saveButton?.isEnabled = false
             viewLifecycleOwner.lifecycleScope.launch {
                 try {
+                    val cover = coverPicker.read(attachmentReader)
                     if (team == null) {
-                        createNewTeam(name, description, services, rules, selectedTeamType, userModel, dialog, failureMessage)
+                        createNewTeam(name, description, services, rules, selectedTeamType, userModel, cover, dialog, failureMessage)
                     } else {
-                        updateExistingTeam(team, name, description, services, rules, dialog, failureMessage)
+                        updateExistingTeam(team, name, description, services, rules, cover, dialog, failureMessage)
                     }
                 } finally {
                     saveButton?.isEnabled = true
@@ -152,7 +161,7 @@ class TeamFragment : BaseBindingFragment<FragmentTeamBinding>(FragmentTeamBindin
 
     private suspend fun createNewTeam(
         name: String, description: String, services: String, rules: String,
-        selectedTeamType: String, userModel: UserEntity, dialog: AlertDialog, failureMessage: String
+        selectedTeamType: String, userModel: UserEntity, cover: UriAttachment?, dialog: AlertDialog, failureMessage: String
     ) {
         val result = viewModel.createTeam(
             name = name,
@@ -162,7 +171,8 @@ class TeamFragment : BaseBindingFragment<FragmentTeamBinding>(FragmentTeamBindin
             teamType = selectedTeamType,
             isPublic = alertCreateTeamBinding.switchPublic.isChecked,
             category = type,
-            userModel = userModel
+            userModel = userModel,
+            cover = cover
         )
         when (result) {
             is TeamActionResult.NameExists -> {
@@ -183,6 +193,7 @@ class TeamFragment : BaseBindingFragment<FragmentTeamBinding>(FragmentTeamBindin
                     getString(R.string.team_created)
                 }
                 Utilities.toast(activity, successMessage)
+                teamToReveal = name
                 viewModel.loadTeams(fromDashboard, type, user?.id)
                 dialog.dismiss()
             }
@@ -194,7 +205,7 @@ class TeamFragment : BaseBindingFragment<FragmentTeamBinding>(FragmentTeamBindin
 
     private suspend fun updateExistingTeam(
         team: TeamDetails, name: String, description: String, services: String, rules: String,
-        dialog: AlertDialog, failureMessage: String
+        cover: UriAttachment?, dialog: AlertDialog, failureMessage: String
     ) {
         val targetTeamId = team._id ?: team.teamId
         if (targetTeamId.isNullOrBlank()) {
@@ -207,7 +218,8 @@ class TeamFragment : BaseBindingFragment<FragmentTeamBinding>(FragmentTeamBindin
             description = description,
             services = services,
             rules = rules,
-            category = type
+            category = type,
+            cover = cover
         )
         when (result) {
             is TeamActionResult.NameExists -> {
@@ -312,10 +324,19 @@ class TeamFragment : BaseBindingFragment<FragmentTeamBinding>(FragmentTeamBindin
 
     private fun observeTeamData() {
         collectLatestWhenStarted(viewModel.teamData) { teamDataList ->
-            teamListAdapter.submitList(teamDataList)
+            teamListAdapter.submitList(teamDataList) { revealCreatedTeam(teamDataList) }
             showNoResultsMessage(teamDataList.isEmpty(), binding.etSearch.text?.toString().orEmpty().trim())
             listContentDescription(conditionApplied)
         }
+    }
+    
+    private fun revealCreatedTeam(teams: List<TeamDetails>) {
+        val name = teamToReveal ?: return
+        if (view == null) return
+        val index = teams.indexOfFirst { it.name == name }
+        if (index < 0) return
+        teamToReveal = null
+        binding.rvTeamList.scrollToPosition(index)
     }
 
     @OptIn(FlowPreview::class)

@@ -141,6 +141,8 @@
     <string name="what_would">¿Qué te gustaría compartir?</string>
     <string name="delete_record">¿Estás seguro de que quieres eliminar lo siguiente?</string>
     <string name="edit_post">Editar publicación</string>
+    <string name="delete_post">Eliminar publicación</string>
+    <string name="notifications">Notificaciones</string>
     <string name="get_started">EMPEZAR</string>
     <string name="year">Año</string>
     <string name="publisher">Editor</string>
@@ -689,10 +691,10 @@
     <string name="bp_must_be_between_60_40_and_300_200">La presión arterial debe estar entre 60/40 y 300/200</string>
     <string name="systolic_and_diastolic_must_be_numbers">Sistólica y diastólica deben ser números</string>
     <string name="added_successfully">Agregado exitosamente</string>
-    <string name="invalid_input_must_be_between_30_and_40">La temperatura corporal debe estar entre 30 y 40</string>
-    <string name="invalid_input_must_be_between_40_and_120">La frecuencia del pulso debe estar entre 40 y 120</string>
+    <string name="invalid_temperature_range">La temperatura corporal debe estar entre 30 y 45</string>
+    <string name="invalid_pulse_range">La frecuencia del pulso debe estar entre 20 y 250</string>
     <string name="invalid_input_must_be_between_1_and_250">La altura debe estar entre 1 y 250</string>
-    <string name="invalid_input_must_be_between_1_and_150">El peso debe estar entre 1 y 150</string>
+    <string name="invalid_weight_range">El peso debe estar entre 0,5 y 500</string>
     <string name="unable_to_add_health_record">No se puede agregar el registro de salud.</string>
     <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">¿Estás seguro de que quieres salir? Se perderán tus datos.</string>
     <string name="yes_i_want_to_exit">"Sí, quiero salir. "</string>
@@ -1134,6 +1136,9 @@
     <string name="no_reports">No hay informes disponibles</string>
     <string name="fetching_ai_providers">Obteniendo proveedores de IA…</string>
     <string name="adopt_survey">Adoptar encuesta</string>
+    <string name="adopt_survey_to">Adoptar encuesta en…</string>
+    <string name="survey_adopted_to">Encuesta adoptada en %1$s</string>
+    <string name="no_survey_adoption_targets">Únete a un equipo o empresa para adoptar esta encuesta</string>
     <string name="survey_adopted_successfully">¡Encuesta adoptada con éxito!</string>
     <string name="user_verification_in_progress">Verificación de usuario en progreso. Por favor, espere mientras procesamos los datos.</string>
     <string name="go_to_mylibrary">Ir a Mi Biblioteca</string>
@@ -1430,4 +1435,7 @@
     <string name="usage_access_message">myPlanet informa a la Planet de tu comunidad cuánto tiempo se usa en este dispositivo, para que tu comunidad vea cómo se usa la aplicación. Android lo llama \"Acceso de uso\". En la siguiente pantalla, busca myPlanet y actívalo.</string>
     <string name="open_settings">Abrir ajustes</string>
     <string name="not_now">Ahora no</string>
+    <string name="add_cover_image">Añadir imagen de portada</string>
+    <string name="change_cover_image">Cambiar imagen de portada</string>
+    <string name="team_cover_image">Imagen de portada del equipo</string>
 </resources>

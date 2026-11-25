@@ -141,6 +141,8 @@
     <string name="what_would">ما الذي ترغب في مشاركته؟</string>
     <string name="delete_record">هل أنت متحقِّق من رغبتك في حذف ما يلي؟</string>
     <string name="edit_post">تعديل المنشور</string>
+    <string name="delete_post">حذف المنشور</string>
+    <string name="notifications">الإشعارات</string>
     <string name="get_started">البدء</string>
     <string name="year">السنة</string>
     <string name="publisher">الناشر</string>
@@ -689,10 +691,10 @@
     <string name="bp_must_be_between_60_40_and_300_200">يجب أن يكون ضغط الدم بين 60/40 و 300/200</string>
     <string name="systolic_and_diastolic_must_be_numbers">يجب أن تكون القيم النبضية والانبساطية أرقام</string>
     <string name="added_successfully">تمت الإضافة بنجاح</string>
-    <string name="invalid_input_must_be_between_30_and_40">يجب أن تكون درجة حرارة الجسم بين 30 و40</string>
-    <string name="invalid_input_must_be_between_40_and_120">معدل النبض يجب أن يكون بين 40 و120</string>
+    <string name="invalid_temperature_range">يجب أن تكون درجة حرارة الجسم بين 30 و45</string>
+    <string name="invalid_pulse_range">معدل النبض يجب أن يكون بين 20 و250</string>
     <string name="invalid_input_must_be_between_1_and_250">يجب أن يكون الارتفاع بين 1 و 250</string>
-    <string name="invalid_input_must_be_between_1_and_150">الوزن يجب أن يكون بين 1 و 150</string>
+    <string name="invalid_weight_range">الوزن يجب أن يكون بين 0.5 و 500</string>
     <string name="unable_to_add_health_record">غير قادر على إضافة سجل صحي</string>
     <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">هل أنت متأكد أنك تريد إلغاء إضافة هذا المورد؟ سيتم فقدان البيانات الخاصة بك</string>
     <string name="yes_i_want_to_exit">"نعم، أرغب في الخروج. "</string>
@@ -1138,6 +1140,9 @@
     <string name="no_reports">لا توجد تقارير متاحة</string>
     <string name="fetching_ai_providers">جلب مزودي الذكاء الاصطناعي…</string>
     <string name="adopt_survey">تبنَّى الاستبيان</string>
+    <string name="adopt_survey_to">تبنّي الاستبيان لـ…</string>
+    <string name="survey_adopted_to">تم تبنّي الاستبيان لـ %1$s</string>
+    <string name="no_survey_adoption_targets">انضم إلى فريق أو مؤسسة لتبنّي هذا الاستبيان</string>
     <string name="survey_adopted_successfully">تم تبني الاستبيان بنجاح!</string>
     <string name="user_verification_in_progress">جارٍ التحقق من المستخدم. يرجى الانتظار أثناء معالجة البيانات.</string>
     <string name="go_to_mylibrary">انتقل إلى مكتبتي</string>
@@ -1443,4 +1448,7 @@
     <string name="usage_access_message">يُبلغ myPlanet منصة Planet الخاصة بمجتمعك بمدة استخدامه على هذا الجهاز، ليتمكن مجتمعك من معرفة كيفية استخدام التطبيق. يسمي Android هذا \"الوصول إلى بيانات الاستخدام\". في الشاشة التالية، ابحث عن myPlanet وفعّله.</string>
     <string name="open_settings">فتح الإعدادات</string>
     <string name="not_now">ليس الآن</string>
+    <string name="add_cover_image">إضافة صورة الغلاف</string>
+    <string name="change_cover_image">تغيير صورة الغلاف</string>
+    <string name="team_cover_image">صورة غلاف الفريق</string>
 </resources>
