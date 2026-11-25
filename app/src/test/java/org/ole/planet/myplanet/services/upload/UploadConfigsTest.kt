@@ -225,7 +225,7 @@ class UploadConfigsTest {
     @Test
     fun `NewsActivities serializer includes customDeviceName`() = runTest {
         val newsLog = NewsLog().apply { userId = "user1"; type = "news"; time = 100L }
-        val serializer = uploadConfigs.NewsActivities.serializer as UploadSerializer.Simple
+        val serializer = uploadConfigs.NewsActivities.serializer as PayloadSerializer.Simple
         val json = serializer.serialize(newsLog)
 
         assertEquals("user1", json.get("user").asString)
@@ -235,7 +235,7 @@ class UploadConfigsTest {
     @Test
     fun `SearchActivity serializer includes androidId and customDeviceName`() = runTest {
         val search = SearchActivity(id = "s1", text = "query")
-        val serializer = uploadConfigs.SearchActivity.serializer as UploadSerializer.Simple
+        val serializer = uploadConfigs.SearchActivity.serializer as PayloadSerializer.Simple
         val json = serializer.serialize(search)
 
         assertEquals("query", json.get("text").asString)
@@ -246,7 +246,7 @@ class UploadConfigsTest {
     @Test
     fun `Rating serializer includes customDeviceName`() = runTest {
         val rating = Rating().apply { rate = 5; user = "{}" }
-        val serializer = uploadConfigs.Rating.serializer as UploadSerializer.Simple
+        val serializer = uploadConfigs.Rating.serializer as PayloadSerializer.Simple
         val json = serializer.serialize(rating)
 
         assertEquals(5, json.get("rate").asInt)
@@ -256,7 +256,7 @@ class UploadConfigsTest {
     @Test
     fun `customDeviceName resolves dynamically when sharedPrefManager value changes`() = runTest {
         val newsLog = NewsLog().apply { userId = "user1"; type = "news"; time = 100L }
-        val serializer = uploadConfigs.NewsActivities.serializer as UploadSerializer.Simple
+        val serializer = uploadConfigs.NewsActivities.serializer as PayloadSerializer.Simple
 
         val json1 = serializer.serialize(newsLog)
         assertEquals("test-custom-device", json1.get("customDeviceName").asString)

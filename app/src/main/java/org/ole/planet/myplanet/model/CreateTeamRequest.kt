@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.model
 
+import org.ole.planet.myplanet.utils.UriAttachment
+
 data class CreateTeamRequest(
     val name: String,
     val description: String,
@@ -7,5 +9,6 @@ data class CreateTeamRequest(
     val rules: String,
     val teamType: String,
     val isPublic: Boolean,
-    val category: String?
+    val category: String?,
+    val cover: UriAttachment? = null
 )

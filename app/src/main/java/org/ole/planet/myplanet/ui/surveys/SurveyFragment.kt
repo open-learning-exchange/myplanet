@@ -9,6 +9,7 @@ import android.widget.ArrayAdapter
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ListAdapter
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.drop
@@ -22,6 +23,7 @@ import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnSurveyAdoptListener
 import org.ole.planet.myplanet.databinding.FragmentSurveyBinding
 import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.debounceDistinct
 import org.ole.planet.myplanet.utils.textChanges
@@ -56,7 +58,30 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener 
     }
 
     override fun onAdoptSurvey(surveyId: String) {
-        viewModel.adoptSurvey(surveyId)
+        if (isTeam) {
+            viewModel.adoptSurvey(surveyId)
+        } else {
+            viewModel.requestAdoption(surveyId)
+        }
+    }
+
+    private fun showAdoptionTargets(request: SurveysViewModel.AdoptionRequest) {
+        if (request.targets.isEmpty()) {
+            Snackbar.make(binding.root, R.string.no_survey_adoption_targets, Snackbar.LENGTH_LONG).show()
+            return
+        }
+        val rows = AdoptSurveyTargetsAdapter.rowsFor(
+            request.targets,
+            getString(R.string.team),
+            getString(R.string.enterprises)
+        )
+        val builder = MaterialAlertDialogBuilder(requireContext(), R.style.CustomAlertDialog)
+        builder.setTitle(R.string.adopt_survey_to)
+            .setAdapter(AdoptSurveyTargetsAdapter(builder.context, rows)) { _, which ->
+                (rows[which] as? TeamSummary)?.let { viewModel.adoptSurveyTo(request.surveyId, it) }
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
     }
 
     override suspend fun getAdapter(): ListAdapter<*, *> {
@@ -170,6 +195,12 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener 
                 Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).show()
                 viewModel.onErrorMessageShown()
             }
+        }
+        collectWhenStarted(viewModel.adoptionRequests) { request ->
+            showAdoptionTargets(request)
+        }
+        collectWhenStarted(viewModel.adoptedTo) { teamName ->
+            Snackbar.make(binding.root, getString(R.string.survey_adopted_to, teamName), Snackbar.LENGTH_LONG).show()
         }
         collectWhenStarted(viewModel.userMessage) { message ->
             message?.let {

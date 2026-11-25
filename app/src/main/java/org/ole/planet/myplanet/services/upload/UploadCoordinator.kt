@@ -38,6 +38,12 @@ class UploadCoordinator @Inject constructor(
 
     private suspend fun <T : Any> runPipeline(
         config: UploadPipelineConfig<T>
+    ): UploadResult<Int> = UploadSerializer.withLock("${config.endpoint}:${config.modelLabel}") {
+        runPipelineLocked(config)
+    }
+
+    private suspend fun <T : Any> runPipelineLocked(
+        config: UploadPipelineConfig<T>
     ): UploadResult<Int> = withContext(dispatcherProvider.io) {
         try {
             val pendingItems = config.fetchPendingItems.invoke()
@@ -105,8 +111,8 @@ class UploadCoordinator @Inject constructor(
 
             val serialized = try {
                 when (val serializer = config.serializer) {
-                    is UploadSerializer.Simple -> serializer.serialize(item)
-                    is UploadSerializer.Async -> serializer.serialize(item)
+                    is PayloadSerializer.Simple -> serializer.serialize(item)
+                    is PayloadSerializer.Async -> serializer.serialize(item)
                 }
             } catch (e: CancellationException) {
                 throw e

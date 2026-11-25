@@ -58,7 +58,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "myplanet_activities",
         modelClassName = "NewsLog",
         fetchPendingItems = { voicesRepository.getPendingNewsLogUploads() },
-        serializer = UploadSerializer.Simple { log -> NewsLog.serialize(log, customDeviceName) },
+        serializer = PayloadSerializer.Simple { log -> NewsLog.serialize(log, customDeviceName) },
         idExtractor = { it.id },
         markUploaded = { results ->
             inTransaction {
@@ -73,7 +73,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "courses_progress",
         modelClassName = "CourseProgress",
         fetchPendingItems = { progressRepository.getPendingCourseProgressUploads() },
-        serializer = UploadSerializer.Simple(org.ole.planet.myplanet.model.CourseProgress::serializeProgress),
+        serializer = PayloadSerializer.Simple(org.ole.planet.myplanet.model.CourseProgress::serializeProgress),
         idExtractor = { it.id },
         markUploaded = { results ->
             inTransaction {
@@ -88,7 +88,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "tasks",
         modelClassName = "TeamTask",
         fetchPendingItems = { teamsSyncRepository.get().getPendingTaskUploads() },
-        serializer = UploadSerializer.Async { task ->
+        serializer = PayloadSerializer.Async { task ->
             val user = userRepository.getUserById(task.assignee ?: "")
             org.ole.planet.myplanet.model.TeamTask.serialize(task, user)
         },
@@ -106,7 +106,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "team_activities",
         modelClassName = "TeamLog",
         fetchPendingItems = { teamsSyncRepository.get().getPendingTeamLogUploads() },
-        serializer = UploadSerializer.Simple { log -> teamsSyncRepository.get().serializeTeamActivities(log) },
+        serializer = PayloadSerializer.Simple { log -> teamsSyncRepository.get().serializeTeamActivities(log) },
         idExtractor = { it.id },
         markUploaded = { results ->
             inTransaction {
@@ -121,7 +121,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "search_activities",
         modelClassName = "SearchActivity",
         fetchPendingItems = { activitiesRepository.getPendingSearchActivityUploads() },
-        serializer = UploadSerializer.Simple { it.serialize(androidId, customDeviceName) },
+        serializer = PayloadSerializer.Simple { it.serialize(androidId, customDeviceName) },
         idExtractor = { it.id },
         markUploaded = { results ->
             inTransaction {
@@ -140,7 +140,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "resource_activities",
         modelClassName = "ResourceActivity",
         fetchPendingItems = { activitiesRepository.getPendingResourceActivityUploads() },
-        serializer = UploadSerializer.Simple { org.ole.planet.myplanet.repository.serializeResourceActivities(it) },
+        serializer = PayloadSerializer.Simple { org.ole.planet.myplanet.repository.serializeResourceActivities(it) },
         idExtractor = { it.id },
         markUploaded = { results ->
             inTransaction {
@@ -155,7 +155,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "admin_activities",
         modelClassName = "ResourceActivity",
         fetchPendingItems = { activitiesRepository.getPendingResourceActivitySyncUploads() },
-        serializer = UploadSerializer.Simple { org.ole.planet.myplanet.repository.serializeResourceActivities(it) },
+        serializer = PayloadSerializer.Simple { org.ole.planet.myplanet.repository.serializeResourceActivities(it) },
         idExtractor = { it.id },
         markUploaded = { results ->
             inTransaction {
@@ -170,7 +170,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "course_activities",
         modelClassName = "CourseActivity",
         fetchPendingItems = { activitiesRepository.getPendingCourseActivityUploads() },
-        serializer = UploadSerializer.Simple(CourseActivity::serialize),
+        serializer = PayloadSerializer.Simple(CourseActivity::serialize),
         idExtractor = { it.id },
         markUploaded = { results ->
             inTransaction {
@@ -190,7 +190,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "meetups",
         modelClassName = "Meetup",
         fetchPendingItems = { eventsRepository.getPendingMeetupUploads() },
-        serializer = UploadSerializer.Simple(Meetup::serialize),
+        serializer = PayloadSerializer.Simple(Meetup::serialize),
         idExtractor = { it.id },
         responseHandler = ResponseHandler.Custom("id", "rev"),
         markUploaded = { results ->
@@ -206,7 +206,7 @@ class UploadConfigs @Inject constructor(
         modelClass = StepExam::class,
         endpoint = "exams",
         fetchPendingItems = { surveysRepository.getPendingAdoptedSurveys() },
-        serializer = UploadSerializer.Async { exam ->
+        serializer = PayloadSerializer.Async { exam ->
             val questions = surveysRepository.getExamQuestions(exam.id)
             StepExam.serializeExam(exam, questions)
         },
@@ -219,7 +219,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "feedback",
         modelClassName = "Feedback",
         fetchPendingItems = { feedbackRepository.getPendingFeedback() },
-        serializer = UploadSerializer.Simple(org.ole.planet.myplanet.model.Feedback::serializeFeedback),
+        serializer = PayloadSerializer.Simple(org.ole.planet.myplanet.model.Feedback::serializeFeedback),
         idExtractor = { it.id },
         mergeConflict = org.ole.planet.myplanet.model.Feedback::mergeConflict,
         markUploaded = { results ->
@@ -235,7 +235,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "apk_logs",
         modelClassName = "ApkLog",
         fetchPendingItems = { diagnosticsRepository.getPendingApkLogs() },
-        serializer = UploadSerializer.Simple { log -> ApkLog.serialize(log, customDeviceName) },
+        serializer = PayloadSerializer.Simple { log -> ApkLog.serialize(log, customDeviceName) },
         idExtractor = { it.id },
         markUploaded = { results ->
             if (results.isEmpty()) return@RoomUploadConfig emptyList()
@@ -249,7 +249,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "submissions",
         modelClassName = "SubmitPhotos",
         fetchPendingItems = { submissionsRepository.getPendingSubmitPhotosUploads() },
-        serializer = UploadSerializer.Simple(org.ole.planet.myplanet.model.SubmitPhotos::serialize),
+        serializer = PayloadSerializer.Simple(org.ole.planet.myplanet.model.SubmitPhotos::serialize),
         idExtractor = { it.id },
         markUploaded = { results ->
             inTransaction {
@@ -266,7 +266,7 @@ class UploadConfigs @Inject constructor(
         modelClass = Submission::class,
         endpoint = "submissions",
         fetchPendingItems = { submissionsRepository.getPendingExamResults() },
-        serializer = UploadSerializer.Async { submission ->
+        serializer = PayloadSerializer.Async { submission ->
             val user = submission.userId?.let { userRepository.getUserById(it) }
             submissionsRepository.getExamUploadPayload(submission, user)
         },
@@ -281,7 +281,7 @@ class UploadConfigs @Inject constructor(
         modelClass = Submission::class,
         endpoint = "submissions",
         fetchPendingItems = { submissionsRepository.getPendingSubmissionsForUpload() },
-        serializer = UploadSerializer.Async { submission ->
+        serializer = PayloadSerializer.Async { submission ->
             val user = submission.userId?.let { userRepository.getUserById(it) }
             submissionsRepository.serializeSubmission(submission, sharedPrefManager.getPlanetCode(), sharedPrefManager.getParentCode(), user)
         },
@@ -297,7 +297,7 @@ class UploadConfigs @Inject constructor(
             endpoint = "resources",
             modelClassName = "MyLibrary",
             fetchPendingItems = { resourcesRepository.getPendingResourceUploads() },
-            serializer = UploadSerializer.Simple { library ->
+            serializer = PayloadSerializer.Simple { library ->
                 resourcesRepository.serializeForUpload(library, user)
             },
             idExtractor = { it.id },
@@ -320,7 +320,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "ratings",
         modelClassName = "Rating",
         fetchPendingItems = { ratingsRepository.getPendingRatingUploads() },
-        serializer = UploadSerializer.Simple { rating -> org.ole.planet.myplanet.model.Rating.serializeRating(rating, customDeviceName) },
+        serializer = PayloadSerializer.Simple { rating -> org.ole.planet.myplanet.model.Rating.serializeRating(rating, customDeviceName) },
         idExtractor = { it.id },
         dbIdExtractor = { it._id }, // Enables POST/PUT logic
         markUploaded = { results ->

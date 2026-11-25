@@ -364,7 +364,7 @@ class NotificationsRepositoryImpl @Inject constructor(
             }
         }
 
-        val chatCountsById = voicesRepository.countTopLevelByTeams(notificationsById.keys.toList())
+        val chatCountsById = voicesRepository.countTopLevelByTeams(notificationsById.keys.toList(), userId)
 
         val current = timeProvider.now()
         val tomorrow = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }

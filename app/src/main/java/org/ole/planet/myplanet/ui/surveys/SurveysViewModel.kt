@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.SurveyFormState
 import org.ole.planet.myplanet.model.SurveyInfo
 import org.ole.planet.myplanet.model.SurveyRow
+import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
@@ -93,6 +94,14 @@ class SurveysViewModel @Inject constructor(
 
     private val _surveySendFailed = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val surveySendFailed: SharedFlow<Unit> = _surveySendFailed.asSharedFlow()
+
+    data class AdoptionRequest(val surveyId: String, val targets: List<TeamSummary>)
+
+    private val _adoptionRequests = MutableSharedFlow<AdoptionRequest>(extraBufferCapacity = 1)
+    val adoptionRequests: SharedFlow<AdoptionRequest> = _adoptionRequests.asSharedFlow()
+
+    private val _adoptedTo = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val adoptedTo: SharedFlow<String> = _adoptedTo.asSharedFlow()
 
     init {
         viewModelScope.launch {
@@ -235,6 +244,33 @@ class SurveysViewModel @Inject constructor(
                 _userMessage.value = "Survey adopted successfully"
                 _isTeamShareAllowed.value = false
                 loadSurveys(isTeam, teamId, false)
+            } catch (e: Exception) {
+                _errorMessage.value = "Failed to adopt survey"
+            }
+        }
+    }
+
+    fun requestAdoption(surveyId: String) {
+        viewModelScope.launch {
+            try {
+                val userId = userRepository.getUserModel()?.id
+                _adoptionRequests.emit(AdoptionRequest(surveyId, surveysRepository.getAdoptionTargets(surveyId, userId)))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _errorMessage.value = "Failed to adopt survey"
+            }
+        }
+    }
+
+    fun adoptSurveyTo(surveyId: String, target: TeamSummary) {
+        viewModelScope.launch {
+            try {
+                val userId = userRepository.getUserModel()?.id
+                surveysRepository.adoptSurvey(surveyId, userId, target._id, true)
+                _adoptedTo.emit(target.name)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _errorMessage.value = "Failed to adopt survey"
             }

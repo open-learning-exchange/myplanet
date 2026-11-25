@@ -1136,6 +1136,9 @@
     <string name="no_reports">Aucun rapport disponible</string>
     <string name="fetching_ai_providers">Récupération des fournisseurs d\'IA…</string>
     <string name="adopt_survey">Adopter le sondage</string>
+    <string name="adopt_survey_to">Adopter le sondage pour…</string>
+    <string name="survey_adopted_to">Sondage adopté pour %1$s</string>
+    <string name="no_survey_adoption_targets">Rejoignez une équipe ou une entreprise pour adopter ce sondage</string>
     <string name="survey_adopted_successfully">Enquête adoptée avec succès !</string>
     <string name="user_verification_in_progress">Vérification de l\'utilisateur en cours. Veuillez patienter pendant que nous traitons les données.</string>
     <string name="go_to_mylibrary">Aller à Ma Bibliothèque</string>
@@ -1428,4 +1431,7 @@
 
     <string name="playback_speed">Vitesse de lecture</string>
     <string name="playback_speed_format">%1$sx</string>
+    <string name="add_cover_image">Ajouter une image de couverture</string>
+    <string name="change_cover_image">Changer l\'image de couverture</string>
+    <string name="team_cover_image">Image de couverture de l\'équipe</string>
 </resources>
