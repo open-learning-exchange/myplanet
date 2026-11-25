@@ -205,6 +205,17 @@ class NewsDaoTest {
     }
 
     @Test
+    fun countTopLevelByTeamExcludingUser_leavesOutThatUsersPosts() = runBlocking {
+        fun post(block: News.() -> Unit) = News().apply { id = UUID.randomUUID().toString(); time = 100L; block() }
+        val mine = post { viewableBy = "teams"; viewableId = "teamA"; userId = "org.couchdb.user:dewie" }
+        val theirs = post { viewableBy = "teams"; viewableId = "teamA"; userId = "org.couchdb.user:okuro" }
+        val unknown = post { viewableBy = "teams"; viewableId = "teamA" }
+        newsDao.upsertAll(listOf(mine, theirs, unknown))
+
+        assertEquals(2L, newsDao.countTopLevelByTeamExcludingUser("teamA", "%\"_id\":\"teamA\"%", "org.couchdb.user:dewie"))
+    }
+
+    @Test
     fun getPlanetMessageShares_returnsOnlyThisPlanetsSharedMessages() = runBlocking {
         fun post(block: News.() -> Unit) = News().apply { id = UUID.randomUUID().toString(); time = 100L; block() }
         val shared = post { docType = "message"; createdOn = "planet1"; newsId = "chat_1"; viewIn = "[{\"_id\":\"teamA\"}]"; message = "long body" }

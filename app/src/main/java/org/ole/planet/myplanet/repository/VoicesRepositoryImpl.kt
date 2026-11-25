@@ -577,13 +577,17 @@ class VoicesRepositoryImpl @Inject constructor(
         return newsDao.countTeamChats(teamId)
     }
 
-    override suspend fun countTopLevelByTeam(teamId: String): Long {
-        return newsDao.countTopLevelByTeam(teamId, teamIdPattern(teamId))
+    override suspend fun countTopLevelByTeam(teamId: String, excludedUserId: String?): Long {
+        return if (excludedUserId.isNullOrBlank()) {
+            newsDao.countTopLevelByTeam(teamId, teamIdPattern(teamId))
+        } else {
+            newsDao.countTopLevelByTeamExcludingUser(teamId, teamIdPattern(teamId), excludedUserId)
+        }
     }
 
-    override suspend fun countTopLevelByTeams(teamIds: List<String>): Map<String, Long> {
+    override suspend fun countTopLevelByTeams(teamIds: List<String>, excludedUserId: String?): Map<String, Long> {
         if (teamIds.isEmpty()) return emptyMap()
-        return teamIds.distinct().associateWith { countTopLevelByTeam(it) }
+        return teamIds.distinct().associateWith { countTopLevelByTeam(it, excludedUserId) }
     }
 
     override suspend fun getPendingNewsLogUploads(): List<org.ole.planet.myplanet.model.NewsLog> {
