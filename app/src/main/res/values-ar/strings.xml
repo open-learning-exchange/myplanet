@@ -958,7 +958,6 @@
     <string name="password_toggle_description">إظهار/إخفاء كلمة المرور</string>
     <string name="skill_level">اختر مستوى المهارة</string>
     <string name="go_to_feedback_page">انتقل إلى صفحة الملاحظات</string>
-    <string name="select_date_of_birth">اختر تاريخ الميلاد</string>
     <string name="confirm_membership">تأكيد الاشتراك</string>
     <string name="trial_period_ended">انتهت الفترة التجريبية! يرجى استكمال التسجيل للمتابعة</string>
     <string name="drag">اسحب %1$s</string>
@@ -1443,6 +1442,7 @@
 
     <string name="playback_speed">سرعة التشغيل</string>
     <string name="playback_speed_format">%1$sx</string>
+    <string name="set">تعيين</string>
     <string name="add_cover_image">إضافة صورة الغلاف</string>
     <string name="change_cover_image">تغيير صورة الغلاف</string>
     <string name="team_cover_image">صورة غلاف الفريق</string>

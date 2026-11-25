@@ -57,6 +57,7 @@ import org.ole.planet.myplanet.model.Achievement.Companion.createReference
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.LibraryTitle
 import org.ole.planet.myplanet.repository.ProfileFieldsUpdate
+import org.ole.planet.myplanet.ui.components.BirthDatePicker
 import org.ole.planet.myplanet.ui.components.CheckboxAdapter
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerActivity
@@ -68,7 +69,7 @@ import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDate
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
-class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDateSetListener {
+class EditAchievementFragment : BaseContainerFragment() {
     private var _binding: FragmentEditAchievementBinding? = null
     private val binding get() = _binding!!
     private lateinit var editAttachmentBinding: EditAttachementBinding
@@ -242,10 +243,9 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             showReferenceDialog(null)
         }
         binding.txtDob.setOnClickListener {
-            val now = Calendar.getInstance()
-            val dpd = DatePickerDialog(requireActivity(), this, now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH])
-            dpd.datePicker.maxDate = Calendar.getInstance().timeInMillis
-            dpd.show()
+            BirthDatePicker.show(requireActivity(), selectedDobIso ?: user?.dob) { year, month, dayOfMonth ->
+                onBirthDatePicked(year, month, dayOfMonth)
+            }
         }
         binding.btnChooseCv.setOnClickListener {
             pickCvLauncher.launch("application/pdf")
@@ -469,7 +469,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         }
     }
 
-    override fun onDateSet(datePicker: DatePicker, i: Int, i1: Int, i2: Int) {
+    private fun onBirthDatePicked(i: Int, i1: Int, i2: Int) {
         val iso = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2)
         binding.txtDob.text = iso
         selectedDobIso = iso
