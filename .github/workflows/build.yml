@@ -61,4 +61,4 @@ jobs:
         run: |
           FLAVOR=${{ matrix.build }}
           args=(assemble${FLAVOR^}Debug --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4)
-          .github/scripts/gradle-ci.sh "${args[@]}"
+          .github/scripts/gradle-retry.sh "${args[@]}"

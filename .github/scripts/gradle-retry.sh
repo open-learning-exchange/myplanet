@@ -3,8 +3,8 @@
 # (never compile or test failures) and a stale Kotlin incremental cache once.
 set -uo pipefail
 
-init="$(dirname "${BASH_SOURCE[0]}")/../gradle/ci-mirror.init.gradle"
-log="${RUNNER_TEMP:-/tmp}/gradle-ci.log"
+init="$(dirname "${BASH_SOURCE[0]}")/../gradle/mirror.init.gradle"
+log="${RUNNER_TEMP:-/tmp}/gradle-retry.log"
 max_retries="${GRADLE_CI_MAX_RETRIES:-3}"
 backoffs=(${GRADLE_CI_BACKOFFS:-20 60 120})
 args=(-I "$init" -Dorg.gradle.internal.repository.max.retries=5 -Dorg.gradle.internal.repository.initial.backoff=2000 "$@")
