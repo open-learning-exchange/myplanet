@@ -605,8 +605,6 @@
     <string name="and">Et </string>
     <string name="more_course_s">autre(s) cours…\n</string>
     <string name="retake_test">Repasser le test [%d]</string>
-    <string name="do_you_want_to_join_this_course">Voulez-vous rejoindre ce cours ?</string>
-    <string name="join_this_course">Rejoindre ce cours</string>
     <string name="storage_running_low">Espace de stockage presque plein: </string>
     <string name="storage_available">Espace de stockage disponible: </string>
     <string name="please_select_starting_date">Veuillez sélectionner la date de début: </string>

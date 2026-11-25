@@ -606,8 +606,6 @@
     <string name="and">"و "</string>
     <string name="more_course_s">" دورة (دورات) أخرى…\n"</string>
     <string name="retake_test">إعادة الاختبار [%d]</string>
-    <string name="do_you_want_to_join_this_course">هل ترغب في الانضمام إلى هذه الدورة؟</string>
-    <string name="join_this_course">انضم إلى هذه الدورة</string>
     <string name="storage_running_low">"التخزين قليل: "</string>
     <string name="storage_available">"التخزين المتاح: "</string>
     <string name="please_select_starting_date">"يرجى تحديد تاريخ البدء: "</string>

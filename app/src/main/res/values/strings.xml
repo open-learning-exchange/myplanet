@@ -625,8 +625,6 @@
     <string name="and">"And "</string>
     <string name="more_course_s">" more course(s)…\n"</string>
     <string name="retake_test">Retake Test [%d]</string>
-    <string name="do_you_want_to_join_this_course">Do you want to join this course?</string>
-    <string name="join_this_course">Join this course</string>
     <string name="storage_running_low">"Storage running low: "</string>
     <string name="storage_available">"Storage available: "</string>
     <string name="please_select_starting_date">"Please select starting date : "</string>

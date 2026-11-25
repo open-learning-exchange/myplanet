@@ -606,8 +606,6 @@
     <string name="and">"Y "</string>
     <string name="more_course_s">" más curso(s)…\n"</string>
     <string name="retake_test">Volver a tomar el test [%d]</string>
-    <string name="do_you_want_to_join_this_course">¿Deseas unirte a este curso?</string>
-    <string name="join_this_course">Unirse a este curso</string>
     <string name="storage_running_low">"Almacenamiento bajo: "</string>
     <string name="storage_available">"Almacenamiento disponible: "</string>
     <string name="please_select_starting_date">"Por favor, selecciona la fecha de inicio: "</string>
