@@ -14,12 +14,12 @@ import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
-class SyncCheckpointResetCallbackTest {
+class DatabaseResetSyncCheckpointCallbackTest {
 
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val prefs get() = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val db = mockk<SupportSQLiteDatabase>(relaxed = true)
-    private val callback = SyncCheckpointResetCallback(context)
+    private val callback = DatabaseResetSyncCheckpointCallback(context)
 
     @Before
     fun setUp() {

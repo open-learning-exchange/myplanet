@@ -10,7 +10,7 @@ import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 // creates the store from scratch (fresh install, or a destructive migration after a schema
 // bump) a leftover checkpoint would resume a pull mid-table and the rows before it would never
 // be downloaded, so drop every checkpoint along with the old data.
-class SyncCheckpointResetCallback(private val context: Context) : RoomDatabase.Callback() {
+class DatabaseResetSyncCheckpointCallback(private val context: Context) : RoomDatabase.Callback() {
 
     override fun onCreate(db: SupportSQLiteDatabase) {
         clearCheckpoints()
