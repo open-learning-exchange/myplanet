@@ -10,6 +10,7 @@ import android.text.TextUtils
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -110,6 +111,12 @@ abstract class BaseResourceFragment : Fragment() {
         pendingDownloadUrls.clear()
         pendingDownloadUrls.addAll(urls)
     }
+    
+    @VisibleForTesting
+    internal fun isOwnFailure(download: Download?): Boolean {
+        val fileUrl = download?.fileUrl
+        return fileUrl.isNullOrEmpty() || fileUrl in pendingDownloadUrls
+    }
 
     private val broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -131,7 +138,7 @@ abstract class BaseResourceFragment : Fragment() {
                             setProgress(download.apply { completeAll = pendingDownloadUrls.isEmpty() })
                         }
                     }
-                } else {
+                } else if (isOwnFailure(download)) {
                     pendingDownloadUrls.clear()
                     if (prgDialog.isShowing()) showDownloadError(download?.message ?: getString(R.string.download_failed))
                     onDownloadFailed()

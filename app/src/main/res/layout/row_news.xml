@@ -221,6 +221,7 @@
 
                     <ImageView
                         android:id="@+id/img_edit"
+                        android:contentDescription="@string/edit_post"
                         android:layout_width="@dimen/_24dp"
                         android:layout_height="@dimen/_24dp"
                         android:layout_marginStart="@dimen/padding_normal"
@@ -230,6 +231,7 @@
                         app:tint="@color/daynight_textColor" />
                     <ImageView
                         android:id="@+id/img_delete"
+                        android:contentDescription="@string/delete_post"
                         android:layout_width="@dimen/_24dp"
                         android:layout_height="@dimen/_24dp"
                         android:layout_marginStart="@dimen/padding_normal"
