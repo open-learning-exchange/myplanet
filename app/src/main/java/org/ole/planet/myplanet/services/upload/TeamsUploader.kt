@@ -104,9 +104,6 @@ class TeamsUploader @Inject constructor(
         )
     }
 
-    // A bulk_docs write that omits _attachments deletes the server's copy. When the image lives
-    // only on the server (synced down, never re-picked here), send a stub so CouchDB keeps it;
-    // when a local file exists, it is re-uploaded after the doc write instead.
     private fun withAttachmentStub(teamData: TeamUploadData): JsonObject {
         val imageName = teamData.imageName
         val serialized = teamData.serialized
