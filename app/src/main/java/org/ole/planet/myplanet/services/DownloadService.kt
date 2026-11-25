@@ -383,6 +383,7 @@ class DownloadService : Service() {
         val download = Download().apply {
             failed = true
             this.message = message
+            fileUrl = originalDownloadUrl.ifEmpty { currentDownloadUrl }
         }
         sendIntent(download, fromSync)
 
