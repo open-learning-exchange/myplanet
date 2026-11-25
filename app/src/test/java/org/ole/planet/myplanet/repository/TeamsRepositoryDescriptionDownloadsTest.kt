@@ -40,7 +40,7 @@ import org.robolectric.annotation.Config
  * are now gathered across the batch and handed to the service once, or not at all.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(application = Application::class, sdk = [31])
+@Config(application = Application::class, sdk = [36])
 class TeamsRepositoryDescriptionDownloadsTest {
 
     private lateinit var db: AppDatabase
