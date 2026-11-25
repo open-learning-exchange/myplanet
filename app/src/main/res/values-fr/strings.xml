@@ -955,7 +955,6 @@
     <string name="password_toggle_description">Afficher/masquer le mot de passe</string>
     <string name="skill_level">Sélectionner le niveau de compétence</string>
     <string name="go_to_feedback_page">Aller à la page de commentaires</string>
-    <string name="select_date_of_birth">Sélectionner la date de naissance</string>
     <string name="confirm_membership">Confirmer l\'inscription</string>
     <string name="trial_period_ended">Période d\'essai terminée ! Veuillez terminer l\'inscription pour continuer</string>
     <string name="drag">glisser %1$s</string>
@@ -1431,6 +1430,7 @@
 
     <string name="playback_speed">Vitesse de lecture</string>
     <string name="playback_speed_format">%1$sx</string>
+    <string name="set">Valider</string>
     <string name="add_cover_image">Ajouter une image de couverture</string>
     <string name="change_cover_image">Changer l\'image de couverture</string>
     <string name="team_cover_image">Image de couverture de l\'équipe</string>
