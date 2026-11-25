@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.voices
 import android.app.Application
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
-import io.mockk.coEvery
 import io.mockk.mockk
 import java.util.Locale
 import java.util.TimeZone
@@ -17,7 +16,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.VoicesEditor
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
@@ -60,27 +58,15 @@ class VoicesActionsTest {
     }
 
     @Test
-    fun `showEditAlert sets reply title and edit icon via binding`() = runTest {
-        val repository: VoicesEditor = mockk()
-        coEvery { repository.getNewsById(any()) } returns null
-        val listener: OnNewsItemClickListener = mockk(relaxed = true)
+    fun `loadExistingImages leaves out images already marked for removal`() {
+        val layout = android.widget.LinearLayout(context)
+        val news = org.ole.planet.myplanet.model.News().apply {
+            imageUrls = listOf("""{"imageUrl":"/a.jpg"}""", """{"imageUrl":"/b.jpg"}""")
+        }
 
-        var launched = false
-        VoicesActions.showEditAlert(
-            context = context,
-            id = null,
-            isEdit = false,
-            currentUser = null,
-            listener = listener,
-            viewHolder = mockk(relaxed = true),
-            repository = repository,
-            updateReplyButton = { _, _, _ -> },
-            launchAction = { _ -> launched = true },
-        )
+        VoicesActions.loadExistingImages(context, news, layout, mutableSetOf("/a.jpg"))
 
-        // verify the dialog inflated via binding shows the "Reply" title string
-        // (the dialog is created and shown; we assert no exception and the launch wiring exists)
-        assertEquals(false, launched) // positive button not clicked yet
+        assertEquals(1, layout.childCount)
     }
 
     private fun fullyPopulatedUser() = UserEntity().apply {
