@@ -16,9 +16,9 @@ import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.callback.OnChangedListener
 import org.ole.planet.myplanet.databinding.ActivityLearnerRegistrationBinding
 import org.ole.planet.myplanet.model.LearnerRegistrationInfo
+import org.ole.planet.myplanet.ui.components.BirthDatePicker
 import org.ole.planet.myplanet.ui.courses.CoursesFilterFragment
 import org.ole.planet.myplanet.ui.sync.LoginActivity
-import org.ole.planet.myplanet.utils.BirthDatePicker
 import org.ole.planet.myplanet.utils.DialogUtils.CustomProgressDialog
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.Utilities

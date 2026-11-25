@@ -27,9 +27,9 @@ import org.ole.planet.myplanet.model.UserSurveyProfile
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.SubmissionsUploader
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.ui.components.BirthDatePicker
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.courses.CoursesFilterFragment
-import org.ole.planet.myplanet.utils.BirthDatePicker
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
 

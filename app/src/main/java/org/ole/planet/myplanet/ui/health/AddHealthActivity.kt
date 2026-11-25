@@ -13,7 +13,7 @@ import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAddHealthBinding
 import org.ole.planet.myplanet.model.MyHealth
-import org.ole.planet.myplanet.utils.BirthDatePicker
+import org.ole.planet.myplanet.ui.components.BirthDatePicker
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities

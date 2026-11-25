@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.utils
+package org.ole.planet.myplanet.ui.components
 
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
