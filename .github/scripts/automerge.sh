@@ -103,14 +103,20 @@ pick_pr() {
 
 pr_state()  { gh pr view "$1" --repo "$REPO" --json state --jq '.state' 2>/dev/null || echo ''; }
 pr_review() { gh pr view "$1" --repo "$REPO" --json reviewDecision --jq '.reviewDecision' 2>/dev/null || echo ''; }
+pr_meta()   { gh pr view "$1" --repo "$REPO" --json state,reviewDecision,mergeable --jq '[(.state // ""), (.reviewDecision // ""), (.mergeable // "")] | join("\u001f")' 2>/dev/null || echo ''; }
 
 check_mergeable() {
-    local pr=$1 state=""
-    for _ in 1 2 3 4 5; do
-        state=$(gh pr view "$pr" --repo "$REPO" --json mergeable --jq '.mergeable' 2>/dev/null || echo '')
-        case "$state" in MERGEABLE|CONFLICTING) break ;; esac
-        sleep 5
-    done
+    local pr=$1 snap=${2:-} state=""
+    case "$snap" in
+        MERGEABLE|CONFLICTING) state="$snap" ;;
+        *)
+            for _ in 1 2 3 4 5; do
+                state=$(gh pr view "$pr" --repo "$REPO" --json mergeable --jq '.mergeable' 2>/dev/null || echo '')
+                case "$state" in MERGEABLE|CONFLICTING) break ;; esac
+                sleep 5
+            done
+            ;;
+    esac
     case "$state" in
         MERGEABLE) ;;
         CONFLICTING) return 1 ;;
@@ -497,14 +503,13 @@ while :; do
         continue
     fi
 
-    state=$(pr_state "$NUMBER")
+    IFS=$'\x1f' read -r state review mergeable_snap <<<"$(pr_meta "$NUMBER")"
     if [ -n "$state" ] && [ "$state" != "OPEN" ]; then
         log "  #$NUMBER is no longer open (state: $state) -- skipping"
         skip_numbers="$skip_numbers $NUMBER"
         continue
     fi
 
-    review=$(pr_review "$NUMBER")
     case "$review" in
         REVIEW_REQUIRED|CHANGES_REQUIRED|CHANGES_REQUESTED)
             log "  #$NUMBER needs a review ($review) -- skipping, $BASE would refuse it"
@@ -513,7 +518,7 @@ while :; do
             continue ;;
     esac
 
-    if ! check_mergeable "$NUMBER"; then
+    if ! check_mergeable "$NUMBER" "${mergeable_snap:-}"; then
         handle_conflict "$NUMBER"
         skip_numbers="$skip_numbers $NUMBER"
         continue
