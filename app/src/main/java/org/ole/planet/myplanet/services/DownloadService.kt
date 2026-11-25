@@ -334,7 +334,7 @@ class DownloadService : Service() {
                 deleteValidatorFile(url)
             }
             Log.e(TAG, "tryDownload [$source]: $fileName — ${result.message} (code=${result.code})")
-            downloadFailed(result.message, fromSync)
+            downloadFailed(result.message, fromSync, result.code)
             return false
         }
 
@@ -371,7 +371,7 @@ class DownloadService : Service() {
         }
     }
 
-    private fun downloadFailed(message: String, fromSync: Boolean) {
+    private fun downloadFailed(message: String, fromSync: Boolean, httpCode: Int? = null) {
         if (stopped) return
         val remaining = cachedRemainingCount
         notificationBuilder?.apply {
@@ -383,11 +383,12 @@ class DownloadService : Service() {
         val download = Download().apply {
             failed = true
             this.message = message
+            fileUrl = originalDownloadUrl.ifEmpty { currentDownloadUrl }
         }
         sendIntent(download, fromSync)
 
         if (!fromSync) {
-            if (message == "File Not Found") {
+            if (httpCode == 404) {
                 val intent = Intent(RESOURCE_NOT_FOUND_ACTION)
                 appScope.launch {
                     broadcastService.sendBroadcast(intent)

@@ -991,6 +991,18 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
+    fun `markResourceUploaded keeps a device-created resource counted as downloaded`() = runTest {
+        every { storagePathResolver.resolveOleDirectory() } returns kotlin.io.path.createTempDirectory("resources-offline-test").toFile()
+        val library = MyLibrary().apply { id = "local-uuid"; resourceLocalAddress = "note.aac"; resourceOffline = true }
+        coEvery { myLibraryDao.getById("local-uuid") } returns library
+        coEvery { myLibraryDao.upsert(any()) } returns Unit
+
+        repository.markResourceUploaded("local-uuid", "remote1", "1-rev", "planet1")
+
+        coVerify { myLibraryDao.upsert(match { it.downloadedRev == "1-rev" && it.isResourceOffline() }) }
+    }
+
+    @Test
     fun `markResourceUploaded re-keys a device-created resource and its folder to the server id`() = runTest {
         val baseDir = kotlin.io.path.createTempDirectory("resources-rekey-test").toFile()
         val oleDir = File(baseDir, "ole")
