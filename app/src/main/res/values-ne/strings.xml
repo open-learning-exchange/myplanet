@@ -141,6 +141,8 @@
     <string name="what_would">तपाईंलाई के साझा गर्न चाहनुहुन्छ?</string>
     <string name="delete_record">के तपाईं यो हटाउन चाहनुहुन्छ?</string>
     <string name="edit_post">पोस्ट सम्पादन गर्नुहोस्</string>
+    <string name="delete_post">पोस्ट मेटाउनुहोस्</string>
+    <string name="notifications">सूचनाहरू</string>
     <string name="get_started">सुरु गर्नुहोस्</string>
     <string name="year">वर्ष</string>
     <string name="publisher">प्रकाशक</string>

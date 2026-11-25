@@ -141,6 +141,8 @@
     <string name="what_would">ما الذي ترغب في مشاركته؟</string>
     <string name="delete_record">هل أنت متحقِّق من رغبتك في حذف ما يلي؟</string>
     <string name="edit_post">تعديل المنشور</string>
+    <string name="delete_post">حذف المنشور</string>
+    <string name="notifications">الإشعارات</string>
     <string name="get_started">البدء</string>
     <string name="year">السنة</string>
     <string name="publisher">الناشر</string>

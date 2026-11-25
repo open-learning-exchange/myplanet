@@ -141,6 +141,8 @@
     <string name="what_would">¿Qué te gustaría compartir?</string>
     <string name="delete_record">¿Estás seguro de que quieres eliminar lo siguiente?</string>
     <string name="edit_post">Editar publicación</string>
+    <string name="delete_post">Eliminar publicación</string>
+    <string name="notifications">Notificaciones</string>
     <string name="get_started">EMPEZAR</string>
     <string name="year">Año</string>
     <string name="publisher">Editor</string>
