@@ -189,7 +189,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_marginEnd="@dimen/padding_large"
+        android:layout_marginEnd="@dimen/fab_margin"
         android:layout_marginBottom="88dp"
         android:contentDescription="@string/add_res"
         android:src="@drawable/ic_add_white"
