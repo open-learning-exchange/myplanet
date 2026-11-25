@@ -61,10 +61,4 @@ jobs:
         run: |
           FLAVOR=${{ matrix.build }}
           args=(assemble${FLAVOR^}Debug --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4)
-          log="$RUNNER_TEMP/gradle-build.log"
-          if ! ./gradlew "${args[@]}" 2>&1 | tee "$log"; then
-            grep -q "Incremental compilation failed" "$log" || exit 1
-            echo "::warning::stale Kotlin incremental caches in the restored build dir; retrying without them"
-            rm -rf app/build/kotlin
-            ./gradlew "${args[@]}"
-          fi
+          .github/scripts/gradle-retry.sh "${args[@]}"
