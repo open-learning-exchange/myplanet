@@ -155,7 +155,7 @@ class TeamsRepositoryImpl @Inject constructor(
                     _rev = uploadedTeams[_id]
                     updated = false
                 }
-            }
+            }.toList()
         if (teamsToUpdate.isNotEmpty()) {
             teamDao.upsertAll(teamsToUpdate)
         }
@@ -1229,15 +1229,17 @@ class TeamsRepositoryImpl @Inject constructor(
         return ob
     }
 
-    private fun processDescription(description: String?) {
+    private fun collectDescriptionLinks(description: String?, into: MutableSet<String>) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
         val links = DownloadUtils.extractLinks(description ?: "")
+        if (links.isEmpty()) return
         val baseUrl = UrlUtils.getUrl()
-        val concatenatedLinks = LinkedHashSet<String>()
-        for (link in links) {
-            concatenatedLinks.add("$baseUrl/$link")
-        }
-        DownloadUtils.openDownloadService(MainApplication.context, ArrayList(concatenatedLinks), true)
+        links.mapTo(into) { "$baseUrl/$it" }
+    }
+    
+    private fun startTeamDescriptionDownloads(links: Set<String>) {
+        if (links.isEmpty()) return
+        DownloadUtils.openDownloadService(MainApplication.context, ArrayList(links), true)
     }
 
     override suspend fun batchInsertMyTeams(documents: List<JsonObject>): Int {
@@ -1255,9 +1257,10 @@ class TeamsRepositoryImpl @Inject constructor(
                 .associateBy { it._id }
                 .toMutableMap()
 
+            val descriptionLinks = LinkedHashSet<String>()
             validDocuments.forEach { doc ->
                 try {
-                    insertMyTeam(doc, existingTeams)
+                    insertMyTeam(doc, existingTeams, descriptionLinks)
                     processedCount++
                 } catch (e: CancellationException) {
                     throw e
@@ -1265,6 +1268,7 @@ class TeamsRepositoryImpl @Inject constructor(
                     Log.e(TAG, "Failed to insert team document", e)
                 }
             }
+            startTeamDescriptionDownloads(descriptionLinks)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -1274,10 +1278,16 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun insertMyTeam(doc: JsonObject) {
-        insertMyTeam(doc, null)
+        val descriptionLinks = LinkedHashSet<String>()
+        insertMyTeam(doc, null, descriptionLinks)
+        startTeamDescriptionDownloads(descriptionLinks)
     }
 
-    private suspend fun insertMyTeam(doc: JsonObject, existingTeams: MutableMap<String, MyTeam>?) {
+    private suspend fun insertMyTeam(
+        doc: JsonObject,
+        existingTeams: MutableMap<String, MyTeam>?,
+        descriptionLinks: MutableSet<String>
+    ) {
         val teamId = GsonUtils.getString("_id", doc)
         if (teamId.isBlank()) return
 
@@ -1313,7 +1323,7 @@ class TeamsRepositoryImpl @Inject constructor(
         }
         val model = existingTeam ?: MyTeam().apply { _id = teamId }
         MyTeam.populateTeamFields(doc, model)
-        processDescription(model.description)
+        collectDescriptionLinks(model.description, descriptionLinks)
         teamDao.upsert(model)
         existingTeams?.put(teamId, model)
     }
@@ -1331,11 +1341,13 @@ class TeamsRepositoryImpl @Inject constructor(
         // time (it also runs per-doc membership/request dedup deletes), so without this each of
         // the ~1000 docs in a heavy-table sync page would commit — and fsync — on its own,
         // turning one page into minutes of work. One transaction => one commit for the page.
+        val descriptionLinks = LinkedHashSet<String>()
         appDatabase.withTransaction {
             syncDocs.forEach { (_, jsonDoc) ->
-                insertMyTeam(jsonDoc, existingTeams)
+                insertMyTeam(jsonDoc, existingTeams, descriptionLinks)
             }
         }
+        startTeamDescriptionDownloads(descriptionLinks)
     }
 
     override suspend fun bulkInsertTasksFromSync(jsonArray: JsonArray) {

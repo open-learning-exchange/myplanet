@@ -110,6 +110,15 @@ class DownloadUtilsEnqueueTest {
     }
 
     @Test
+    fun openDownloadService_emptyList_startsNothing() {
+        DownloadUtils.openDownloadService(context, arrayListOf(), true)
+
+        val prefs = context.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
+        assertEquals(null, prefs.getStringSet(DownloadService.PENDING_DOWNLOADS_KEY, null))
+        verify(exactly = 0) { DownloadService.startService(any(), any(), any()) }
+    }
+
+    @Test
     fun openDownloadService_nullContext_doesNothing() {
         DownloadUtils.openPriorityDownloadService(null, arrayListOf("a"))
         DownloadUtils.openDownloadService(null, arrayListOf("a"), false)
