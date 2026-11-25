@@ -41,6 +41,7 @@ import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.VoiceImagePreparer
 import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -145,6 +146,48 @@ class VoicesUploaderTest {
         coVerify(exactly = 0) { uploadRepository.postUpload(any(), any()) }
         coVerify(exactly = 0) { uploadRepository.uploadResource(any(), any(), any()) }
         assertEquals("Hello\n![](resources/res-1/post1.jpg)", updates.captured.single().message)
+    }
+
+    private fun uploadOneImage(file: File) {
+        coEvery { voicesRepository.getNewsForUpload() } returns listOf(voiceWithImage(imageEntry(file.path)))
+        stubImagePut(201)
+        stubBulkUpload(slot())
+        coEvery { voicesRepository.markNewsUploaded(any()) } returns Unit
+    }
+
+    @Test
+    fun `an uploaded prepared image moves to its resource path so the post shows it before resource sync`() = testScope.runTest {
+        val filesDir = tempFolder.newFolder("files")
+        val external = tempFolder.newFolder("external")
+        every { context.filesDir } returns filesDir
+        every { context.cacheDir } returns tempFolder.newFolder("cache")
+        every { FileUtils.getExternalFilesDir(any()) } returns external
+        val file = File(VoiceImagePreparer.directory(context), "post1.jpg").apply { writeBytes(byteArrayOf(1, 2, 3)) }
+        uploadOneImage(file)
+
+        voicesUploader.uploadNews()
+        advanceUntilIdle()
+
+        val kept = File(external, "ole/res-1/post1.jpg")
+        assertTrue(kept.isFile)
+        assertEquals(listOf<Byte>(1, 2, 3), kept.readBytes().toList())
+        assertTrue(!file.exists())
+    }
+
+    @Test
+    fun `an uploaded image the app does not own is copied to its resource path and left in place`() = testScope.runTest {
+        val external = tempFolder.newFolder("external")
+        every { context.filesDir } returns tempFolder.newFolder("files")
+        every { context.cacheDir } returns tempFolder.newFolder("cache")
+        every { FileUtils.getExternalFilesDir(any()) } returns external
+        val file = tempFolder.newFile("post1.jpg").apply { writeBytes(byteArrayOf(4, 5)) }
+        uploadOneImage(file)
+
+        voicesUploader.uploadNews()
+        advanceUntilIdle()
+
+        assertEquals(listOf<Byte>(4, 5), File(external, "ole/res-1/post1.jpg").readBytes().toList())
+        assertTrue(file.isFile)
     }
 
     @Test

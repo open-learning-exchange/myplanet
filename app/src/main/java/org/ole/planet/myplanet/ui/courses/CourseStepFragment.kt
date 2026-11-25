@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.courses
 import android.os.Bundle
 import android.text.Spannable
 import android.text.style.URLSpan
-import android.util.Log
 import android.view.ActionMode
 import android.view.LayoutInflater
 import android.view.Menu
@@ -134,9 +133,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                         }
                     }
 
-                    if (userHasCourse) {
-                        viewModel.saveCourseProgress(stepNumber)
-                    }
+                    saveProgressIfCurrentPage()
                 }
             }
         }
@@ -190,16 +187,15 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         }
     }
 
-    override fun setMenuVisibility(visible: Boolean) {
-        super.setMenuVisibility(visible)
-        if (!isAdded || !::step.isInitialized) return
-        try {
-            if (visible && userHasCourse) {
-                viewModel.saveCourseProgress(stepNumber)
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "setMenuVisibility failed", e)
-        }
+    override fun onResume() {
+        super.onResume()
+        saveProgressIfCurrentPage()
+    }
+    
+    private fun saveProgressIfCurrentPage() {
+        if (!::step.isInitialized || !userHasCourse) return
+        if (!isResumed) return
+        viewModel.saveCourseProgress(stepNumber)
     }
 
     private fun setListeners() {
@@ -262,7 +258,6 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     }
 
     private companion object {
-        private const val TAG = "CourseStepFragment"
         const val MENU_ITEM_ASK_AI = 42
     }
 
