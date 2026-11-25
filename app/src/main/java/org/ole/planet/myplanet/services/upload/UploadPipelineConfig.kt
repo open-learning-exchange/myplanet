@@ -9,7 +9,7 @@ interface UploadPipelineConfig<T : Any> {
     val modelLabel: String
 
     val fetchPendingItems: suspend () -> List<T>
-    val serializer: UploadSerializer<T>
+    val serializer: PayloadSerializer<T>
 
     val idExtractor: (T) -> String?
     val dbIdExtractor: ((T) -> String?)?
