@@ -89,6 +89,9 @@ interface NewsDao {
     @Query("SELECT COUNT(*) FROM news WHERE (replyTo IS NULL OR replyTo = '') AND ((viewableBy = 'teams' COLLATE NOCASE AND viewableId = :teamId COLLATE NOCASE) OR viewIn LIKE :teamPattern ESCAPE '\\')")
     suspend fun countTopLevelByTeam(teamId: String, teamPattern: String): Long
 
+    @Query("SELECT COUNT(*) FROM news WHERE (replyTo IS NULL OR replyTo = '') AND ((viewableBy = 'teams' COLLATE NOCASE AND viewableId = :teamId COLLATE NOCASE) OR viewIn LIKE :teamPattern ESCAPE '\\') AND userId IS NOT :excludedUserId")
+    suspend fun countTopLevelByTeamExcludingUser(teamId: String, teamPattern: String, excludedUserId: String): Long
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(news: News)
 

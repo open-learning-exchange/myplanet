@@ -11,7 +11,7 @@ data class UploadConfig<T : Any>(
 
     override val fetchPendingItems: suspend () -> List<T>,
 
-    override val serializer: UploadSerializer<T>,
+    override val serializer: PayloadSerializer<T>,
 
     override val idExtractor: (T) -> String?,
 
@@ -47,14 +47,14 @@ data class UploadConfig<T : Any>(
     ): List<UploadedItemResult> = markUploaded(results)
 }
 
-sealed class UploadSerializer<T : Any> {
+sealed class PayloadSerializer<T : Any> {
     data class Simple<T : Any>(
         val serialize: (T) -> JsonObject
-    ) : UploadSerializer<T>()
+    ) : PayloadSerializer<T>()
 
     data class Async<T : Any>(
         val serialize: suspend (T) -> JsonObject
-    ) : UploadSerializer<T>()
+    ) : PayloadSerializer<T>()
 }
 
 sealed class ResponseHandler {

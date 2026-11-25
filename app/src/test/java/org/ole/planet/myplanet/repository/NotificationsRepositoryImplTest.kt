@@ -995,7 +995,7 @@ class NotificationsRepositoryImplTest {
         }
 
         coEvery { teamNotificationDao.getByTypeAndParentIds("chat", teamIds) } returns emptyList()
-        coEvery { voicesRepository.countTopLevelByTeams(emptyList()) } returns emptyMap()
+        coEvery { voicesRepository.countTopLevelByTeams(emptyList(), any()) } returns emptyMap()
         coEvery { teamsRepository.get().getTasksForUserBetween(eq(userId), any(), any()) } returns listOf(taskForTeam1)
 
         val result = repository.getTeamNotifications(teamIds, userId)
@@ -1019,12 +1019,12 @@ class NotificationsRepositoryImplTest {
         }
 
         coEvery { teamNotificationDao.getByTypeAndParentIds("chat", teamIds) } returns listOf(chatNotification)
-        coEvery { voicesRepository.countTopLevelByTeams(listOf(chatTrackedTeamId)) } returns mapOf(chatTrackedTeamId to 5L)
+        coEvery { voicesRepository.countTopLevelByTeams(listOf(chatTrackedTeamId), userId) } returns mapOf(chatTrackedTeamId to 5L)
         coEvery { teamsRepository.get().getTasksForUserBetween(eq(userId), any(), any()) } returns emptyList()
 
         val result = repository.getTeamNotifications(teamIds, userId)
 
-        coVerify(exactly = 1) { voicesRepository.countTopLevelByTeams(listOf(chatTrackedTeamId)) }
+        coVerify(exactly = 1) { voicesRepository.countTopLevelByTeams(listOf(chatTrackedTeamId), userId) }
 
         assertEquals(2, result.size)
         assertTrue(result[chatTrackedTeamId]?.hasChat == true)
@@ -1038,7 +1038,7 @@ class NotificationsRepositoryImplTest {
         val result = repository.getTeamNotifications(emptyList(), "user1")
         assertTrue(result.isEmpty())
         coVerify(exactly = 0) { teamNotificationDao.getByTypeAndParentIds(any(), any()) }
-        coVerify(exactly = 0) { voicesRepository.countTopLevelByTeams(any()) }
+        coVerify(exactly = 0) { voicesRepository.countTopLevelByTeams(any(), any()) }
     }
 
     @Test
@@ -1054,12 +1054,12 @@ class NotificationsRepositoryImplTest {
         val notif3 = TeamNotification().apply { parentId = team3; type = "chat"; lastCount = 10 }
 
         coEvery { teamNotificationDao.getByTypeAndParentIds("chat", teamIds) } returns listOf(notif1, notif2, notif3)
-        coEvery { voicesRepository.countTopLevelByTeams(teamIds) } returns mapOf(team1 to 5L, team2 to 3L, team3 to 10L)
+        coEvery { voicesRepository.countTopLevelByTeams(teamIds, userId) } returns mapOf(team1 to 5L, team2 to 3L, team3 to 10L)
         coEvery { teamsRepository.get().getTasksForUserBetween(eq(userId), any(), any()) } returns emptyList()
 
         val result = repository.getTeamNotifications(teamIds, userId)
 
-        coVerify(exactly = 1) { voicesRepository.countTopLevelByTeams(teamIds) }
+        coVerify(exactly = 1) { voicesRepository.countTopLevelByTeams(teamIds, userId) }
 
         assertEquals(3, result.size)
         assertTrue(result[team1]?.hasChat == true)   // 2 < 5

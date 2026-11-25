@@ -52,13 +52,6 @@ class TakeCourseViewModel @Inject constructor(
 
     private var loadedCourseId: String? = null
 
-    var hasOfferedJoinDialog = false
-        private set
-
-    fun markJoinDialogOffered() {
-        hasOfferedJoinDialog = true
-    }
-
     suspend fun logCourseVisit(courseId: String, courseTitle: String, userName: String) {
         activitiesRepository.logCourseVisit(courseId, courseTitle, userName)
     }

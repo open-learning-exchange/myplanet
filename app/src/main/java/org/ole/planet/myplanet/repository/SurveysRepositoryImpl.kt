@@ -93,12 +93,12 @@ class SurveysRepositoryImpl @Inject constructor(
                 if (existingSurvey == null) {
                     val newSurveyId = UUID.randomUUID().toString()
                     val mappedSurvey = createMappedSurvey(newSurveyId, examId, exam, userModel, teamName, teamId)
-                    examDao.upsert(mappedSurvey ?: return)
+                    examDao.upsert(mappedSurvey)
 
                     val questionEntities = ExamQuestion.insertExamQuestions(
                         ExamQuestion.serializeQuestions(getExamQuestions(examId)),
                         newSurveyId
-                    ).mapNotNull { it }
+                    ).map { it }
                     if (questionEntities.isNotEmpty()) {
                         questionDao.upsertAll(questionEntities)
                     }
@@ -118,7 +118,7 @@ class SurveysRepositoryImpl @Inject constructor(
                 sParentCode = sParentCode,
                 isTeam = isTeam,
                 teamId = teamId
-            )?.let { submissionDao.upsertAll(listOf(it)) }
+            ).let { submissionDao.upsertAll(listOf(it)) }
         }
     }
 
@@ -312,7 +312,7 @@ class SurveysRepositoryImpl @Inject constructor(
         userId: String?,
         surveys: List<StepExam>
     ): Map<String, SurveyInfo> {
-        val surveyIds = surveys.mapNotNull { it.id }
+        val surveyIds = surveys.map { it.id }
         val submissions = if (isTeam && !teamId.isNullOrEmpty()) {
             submissionDao.getByTeamId(teamId)
         } else if (!userId.isNullOrEmpty()) {
@@ -336,7 +336,7 @@ class SurveysRepositoryImpl @Inject constructor(
             resolvedId to submission
         }.groupBy({ it.first }, { it.second })
 
-        return surveys.mapNotNull { survey ->
+        return surveys.associate { survey ->
             val surveyId = survey.id
             val surveySubmissions = submissionsByParentId[surveyId].orEmpty()
             val submissionCount = surveySubmissions.size
@@ -355,14 +355,14 @@ class SurveysRepositoryImpl @Inject constructor(
                     ?.let { formatDate(it, "MMM dd, yyyy") }
                     .orEmpty()
             )
-        }.toMap()
+        }
     }
 
     override suspend fun getSurveyFormState(
         surveys: List<StepExam>,
         teamId: String?
     ): Map<String, SurveyFormState> {
-        val surveyIds = surveys.mapNotNull { it.id }
+        val surveyIds = surveys.map { it.id }
         if (surveyIds.isEmpty()) return emptyMap()
 
         val teamSubmissions = if (teamId.isNullOrEmpty()) {
@@ -373,13 +373,13 @@ class SurveysRepositoryImpl @Inject constructor(
         }
         val questionCounts = questionDao.countByExamIds(surveyIds)
 
-        return surveys.mapNotNull { survey ->
+        return surveys.associate { survey ->
             val surveyId = survey.id
             surveyId to SurveyFormState(
                 teamSubmissions[surveyId],
                 questionCounts[surveyId] ?: 0
             )
-        }.toMap()
+        }
     }
 
     override suspend fun getSurveySubmissionCount(userId: String?): Int {
@@ -425,7 +425,7 @@ class SurveysRepositoryImpl @Inject constructor(
             examDao.upsertAll(exams)
         }
         if (questions.isNotEmpty()) {
-            questionDao.upsertAll(questions.mapNotNull { it })
+            questionDao.upsertAll(questions.map { it })
             questionDao.deleteStaleQuestions(questions)
         }
     }
