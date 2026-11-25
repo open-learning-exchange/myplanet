@@ -125,6 +125,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         }
 
         bindViews()
+        startLastSyncLabelTicker()
         setupAvailableSpace()
 
         changeLogoColor()
