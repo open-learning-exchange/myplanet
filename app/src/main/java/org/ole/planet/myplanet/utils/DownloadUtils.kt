@@ -161,6 +161,7 @@ object DownloadUtils {
 
     @RequiresApi(Build.VERSION_CODES.S)
     fun openDownloadService(context: Context?, urls: ArrayList<String>, fromSync: Boolean) {
+        if (urls.isEmpty()) return
         context?.let { enqueueUrls(it, DownloadService.PENDING_DOWNLOADS_KEY, urls, fromSync) }
     }
 

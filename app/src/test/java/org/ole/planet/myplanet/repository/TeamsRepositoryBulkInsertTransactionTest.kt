@@ -40,7 +40,7 @@ import org.robolectric.annotation.Config
  * commit (and fsync) once instead of individually. The rest of the suite mocks the DAOs, so this is
  * the only test that verifies the batch actually lands atomically.
  *
- * SDK is pinned below S so `processDescription` short-circuits (it otherwise calls the download
+ * SDK is pinned below S so `collectDescriptionLinks` short-circuits (it otherwise calls the download
  * service via MainApplication.context, which isn't wired up in a plain unit test).
  */
 @RunWith(RobolectricTestRunner::class)
