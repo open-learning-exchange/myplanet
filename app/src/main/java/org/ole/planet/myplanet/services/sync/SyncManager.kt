@@ -116,12 +116,13 @@ class SyncManager @Inject constructor(
     fun isMainSyncActive(): Boolean = isSyncing.get()
 
     private fun destroy(succeeded: Boolean) {
+        val syncListener = listener
         cancelBackgroundSync()
         cancel(context, 111)
         isSyncing.set(false)
         if (succeeded) {
             sharedPrefManager.setLastSync(Date().time)
-            listener?.onSyncComplete()
+            syncListener?.onSyncComplete()
         }
         listener = null
         if (succeeded) {
