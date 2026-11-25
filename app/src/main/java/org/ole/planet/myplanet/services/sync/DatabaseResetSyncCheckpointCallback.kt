@@ -6,10 +6,6 @@ import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 
-// Table pull checkpoints live in SharedPreferences, which outlive the Room store. When Room
-// creates the store from scratch (fresh install, or a destructive migration after a schema
-// bump) a leftover checkpoint would resume a pull mid-table and the rows before it would never
-// be downloaded, so drop every checkpoint along with the old data.
 class DatabaseResetSyncCheckpointCallback(private val context: Context) : RoomDatabase.Callback() {
 
     override fun onCreate(db: SupportSQLiteDatabase) {
