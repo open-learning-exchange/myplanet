@@ -496,7 +496,7 @@
     <string name="submit">Soumettre</string>
     <string name="our_courses">Nos cours</string>
     <string name="file">Fichier : %s</string>
-    <string name="recording_audio">Enregistrement audio en cours…</string>
+    <string name="recording_audio_elapsed">Enregistrement audio en cours… %1$s</string>
     <string name="selected">Sélectionné : </string>
     <string name="last_sync">Dernière synchronisation avec le serveur : %s</string>
     <string name="last_syncs">Dernière synchronisation</string>

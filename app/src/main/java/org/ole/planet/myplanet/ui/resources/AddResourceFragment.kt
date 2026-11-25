@@ -10,7 +10,9 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.os.SystemClock
 import android.provider.MediaStore
+import android.text.format.DateUtils
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -32,6 +34,10 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import java.util.UUID
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -52,6 +58,7 @@ class AddResourceFragment : BaseBindingBottomSheetFragment<FragmentAddResourceBi
     var tvTime: TextView? = null
     var floatingActionButton: FloatingActionButton? = null
     private var audioRecorder: AudioRecorder? = null
+    private var recordingTimerJob: Job? = null
     private var photoURI: Uri? = null
     private var videoUri: Uri? = null
     private lateinit var captureImageLauncher: ActivityResultLauncher<Uri>
@@ -167,6 +174,7 @@ class AddResourceFragment : BaseBindingBottomSheetFragment<FragmentAddResourceBi
             if (audioRecorder != null && audioRecorder?.isRecording() == true) {
                 audioRecorder?.forceStop()
             }
+            stopRecordingTimer()
             dialog.dismiss()
         }
         dialog.show()
@@ -175,11 +183,12 @@ class AddResourceFragment : BaseBindingBottomSheetFragment<FragmentAddResourceBi
     private fun createAudioRecorder(dialog: AlertDialog) {
         audioRecorder?.setAudioRecordListener(object : OnAudioRecordListener {
             override fun onRecordStarted() {
-                tvTime?.setText(R.string.recording_audio)
+                startRecordingTimer()
                 floatingActionButton?.setImageResource(R.drawable.ic_stop)
             }
 
             override fun onRecordStopped(outputFile: String?) {
+                stopRecordingTimer()
                 tvTime?.text = getString(R.string.empty_text)
                 dialog.dismiss()
                 processResource(outputFile)
@@ -187,10 +196,30 @@ class AddResourceFragment : BaseBindingBottomSheetFragment<FragmentAddResourceBi
             }
 
             override fun onError(error: String?) {
+                stopRecordingTimer()
+                tvTime?.text = getString(R.string.empty_text)
                 Utilities.toast(activity, error)
                 floatingActionButton?.setImageResource(R.drawable.ic_mic)
             }
         })
+    }
+
+    // Shows "Recording audio… 00:07", ticking once a second while the recorder runs.
+    private fun startRecordingTimer() {
+        recordingTimerJob?.cancel()
+        val startedAt = SystemClock.elapsedRealtime()
+        recordingTimerJob = lifecycleScope.launch {
+            while (isActive) {
+                val elapsedSeconds = (SystemClock.elapsedRealtime() - startedAt) / 1000
+                tvTime?.text = getString(R.string.recording_audio_elapsed, DateUtils.formatElapsedTime(elapsedSeconds))
+                delay(1.seconds)
+            }
+        }
+    }
+
+    private fun stopRecordingTimer() {
+        recordingTimerJob?.cancel()
+        recordingTimerJob = null
     }
 
     private fun dispatchTakeVideoIntent() {

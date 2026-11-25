@@ -497,7 +497,7 @@
     <string name="submit">إرسال</string>
     <string name="our_courses">دوراتنا</string>
     <string name="file">%s :الملف</string>
-    <string name="recording_audio">جارٍ تسجيل الصوت…</string>
+    <string name="recording_audio_elapsed">جارٍ تسجيل الصوت… %1$s</string>
     <string name="selected">"المحدد: "</string>
     <string name="last_sync">%s :آخر مزامنة مع الخادم</string>
     <string name="last_syncs">آخر مزامنة</string>

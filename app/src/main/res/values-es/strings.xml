@@ -497,7 +497,7 @@
     <string name="submit">Enviar</string>
     <string name="our_courses">Nuestros cursos</string>
     <string name="file">Archivo: %s</string>
-    <string name="recording_audio">Grabando audio…</string>
+    <string name="recording_audio_elapsed">Grabando audio… %1$s</string>
     <string name="selected">"Seleccionado: "</string>
     <string name="last_sync">Última sincronización con el servidor: %s</string>
     <string name="last_syncs">Última sincronización</string>
