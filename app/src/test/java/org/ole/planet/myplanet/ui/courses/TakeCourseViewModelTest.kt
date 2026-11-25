@@ -254,13 +254,6 @@ class TakeCourseViewModelTest {
     }
 
     @Test
-    fun joinDialog_isOnlyOfferedOnce() {
-        assertFalse(viewModel.hasOfferedJoinDialog)
-        viewModel.markJoinDialogOffered()
-        assertTrue(viewModel.hasOfferedJoinDialog)
-    }
-
-    @Test
     fun getRatingPromptDecision_whenParamsNullOrEmpty_returnsSkip() = runTest {
         assertEquals(RatingPromptDecision.Skip, viewModel.getRatingPromptDecision(null, "user_1"))
         assertEquals(RatingPromptDecision.Skip, viewModel.getRatingPromptDecision("", "user_1"))

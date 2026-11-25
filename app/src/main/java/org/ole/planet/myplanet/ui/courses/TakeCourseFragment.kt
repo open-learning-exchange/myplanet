@@ -1,13 +1,11 @@
 package org.ole.planet.myplanet.ui.courses
 
-import android.content.DialogInterface
 import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.withStarted
@@ -30,7 +28,6 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.ratings.RatingsFragment
-import org.ole.planet.myplanet.utils.DialogUtils.getDialog
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
@@ -49,7 +46,6 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
     var position = 0
     private var currentStep = 0
     private var currentCourseProgress = 0
-    private var joinDialog: AlertDialog? = null
     private var lastPositionBeforeExam = -1
     private var restoredPosition = -1
     private var coursesPagerAdapter: CoursesPagerAdapter? = null
@@ -251,17 +247,6 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
         if (!isGuest && !containsUserId) {
             binding.btnRemove.visibility = View.VISIBLE
             binding.btnRemove.text = getString(R.string.join)
-            if (!viewModel.hasOfferedJoinDialog) {
-                viewModel.markJoinDialogOffered()
-                joinDialog = getDialog(
-                    requireActivity(),
-                    getString(R.string.do_you_want_to_join_this_course),
-                    getString(R.string.join_this_course)
-                ) { _: DialogInterface?, _: Int ->
-                    addRemoveCourse()
-                }
-                joinDialog?.show()
-            }
         } else {
             binding.btnRemove.visibility = View.GONE
         }
@@ -528,8 +513,6 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
         lifecycleScope.coroutineContext.cancelChildren()
         progressJob = null
         stepLockJob = null
-        joinDialog?.dismiss()
-        joinDialog = null
         coursesPagerAdapter = null
         super.onDestroyView()
     }
