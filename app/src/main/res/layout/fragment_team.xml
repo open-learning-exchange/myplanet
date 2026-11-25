@@ -121,8 +121,7 @@
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintWidth_percent="0.3" />
         </androidx.constraintlayout.widget.ConstraintLayout>
-
-        <!-- Bottom padding lets the last row scroll clear of the floating add_team button. -->
+        
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_team_list"
             android:layout_width="match_parent"
