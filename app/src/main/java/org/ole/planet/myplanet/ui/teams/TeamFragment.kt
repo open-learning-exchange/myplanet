@@ -49,6 +49,7 @@ class TeamFragment : BaseBindingFragment<FragmentTeamBinding>(FragmentTeamBindin
     var user: UserEntity? = null
     private lateinit var teamListAdapter: TeamsAdapter
     private var conditionApplied: Boolean = false
+    private var teamToReveal: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -183,6 +184,7 @@ class TeamFragment : BaseBindingFragment<FragmentTeamBinding>(FragmentTeamBindin
                     getString(R.string.team_created)
                 }
                 Utilities.toast(activity, successMessage)
+                teamToReveal = name
                 viewModel.loadTeams(fromDashboard, type, user?.id)
                 dialog.dismiss()
             }
@@ -312,10 +314,19 @@ class TeamFragment : BaseBindingFragment<FragmentTeamBinding>(FragmentTeamBindin
 
     private fun observeTeamData() {
         collectLatestWhenStarted(viewModel.teamData) { teamDataList ->
-            teamListAdapter.submitList(teamDataList)
+            teamListAdapter.submitList(teamDataList) { revealCreatedTeam(teamDataList) }
             showNoResultsMessage(teamDataList.isEmpty(), binding.etSearch.text?.toString().orEmpty().trim())
             listContentDescription(conditionApplied)
         }
+    }
+    
+    private fun revealCreatedTeam(teams: List<TeamDetails>) {
+        val name = teamToReveal ?: return
+        if (view == null) return
+        val index = teams.indexOfFirst { it.name == name }
+        if (index < 0) return
+        teamToReveal = null
+        binding.rvTeamList.scrollToPosition(index)
     }
 
     @OptIn(FlowPreview::class)
