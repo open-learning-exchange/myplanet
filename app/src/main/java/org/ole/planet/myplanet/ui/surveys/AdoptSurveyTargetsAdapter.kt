@@ -13,7 +13,7 @@ import org.ole.planet.myplanet.model.TeamSummary
  * Rows for the "Adopt survey to…" picker: a section title (a [String]) followed by the
  * teams or enterprises ([TeamSummary]) under it. Only the team rows are tappable.
  */
-class AdoptionTargetsAdapter(
+class AdoptSurveyTargetsAdapter(
     context: Context,
     private val rows: List<Any>
 ) : ArrayAdapter<Any>(context, android.R.layout.simple_list_item_1, rows) {

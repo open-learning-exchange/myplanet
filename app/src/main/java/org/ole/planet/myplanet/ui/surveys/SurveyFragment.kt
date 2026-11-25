@@ -70,14 +70,14 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener 
             Snackbar.make(binding.root, R.string.no_survey_adoption_targets, Snackbar.LENGTH_LONG).show()
             return
         }
-        val rows = AdoptionTargetsAdapter.rowsFor(
+        val rows = AdoptSurveyTargetsAdapter.rowsFor(
             request.targets,
             getString(R.string.team),
             getString(R.string.enterprises)
         )
         val builder = MaterialAlertDialogBuilder(requireContext(), R.style.CustomAlertDialog)
         builder.setTitle(R.string.adopt_survey_to)
-            .setAdapter(AdoptionTargetsAdapter(builder.context, rows)) { _, which ->
+            .setAdapter(AdoptSurveyTargetsAdapter(builder.context, rows)) { _, which ->
                 (rows[which] as? TeamSummary)?.let { viewModel.adoptSurveyTo(request.surveyId, it) }
             }
             .setNegativeButton(R.string.cancel, null)
