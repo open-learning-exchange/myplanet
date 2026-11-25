@@ -453,6 +453,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
 
     private fun startNetworkMonitoring() {
         NetworkMonitorWorker.start(this)
+        NetworkMonitorWorker.observeReconnects(this, isNetworkConnectedFlow, applicationScope)
     }
 
     override fun attachBaseContext(base: Context) {

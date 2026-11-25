@@ -39,6 +39,26 @@ class SubmissionDaoTest {
     }
 
     @Test
+    fun getTeamIdsWithSubmissionsFor_matchesSurveyAndSuffixedIdsWithATeam() = runBlocking {
+        fun sub(id: String, parentId: String, teamId: String?) =
+            Submission(id = id, parentId = parentId, type = "survey").apply { this.teamId = teamId }
+        submissionDao.upsertAll(
+            listOf(
+                sub("a", "s1", "t1"),
+                sub("b", "s1", "t1"),
+                sub("c", "s1@planet", "t2"),
+                sub("d", "s1", null),
+                sub("e", "s1", ""),
+                sub("f", "s10", "t3"),
+                sub("g", "other", "t4"),
+            )
+        )
+
+        assertEquals(setOf("t1", "t2"), submissionDao.getTeamIdsWithSubmissionsFor("s1").toSet())
+        assertEquals(2, submissionDao.getTeamIdsWithSubmissionsFor("s1").size)
+    }
+
+    @Test
     fun getPendingExamResults_returnsFinishedAttemptsAndChangedUploadsOnly() = runBlocking {
         fun exam(id: String, status: String, remoteId: String?, updated: Boolean) = Submission(
             id = id, parentId = "exam1", userId = "user1", type = "exam", status = status, _id = remoteId, isUpdated = updated

@@ -433,8 +433,13 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
         val backgroundImage = binding.root.findViewById<ImageView>(R.id.backgroundImage)
         val playerView = binding.root.findViewById<PlayerView>(R.id.audio_player_view)
 
-        trackTitle.text = FileUtils.nameWithoutExtension(filePath)
-        artistName.text = title ?: "Unknown Artist"
+        val libraryOrNull = if (::library.isInitialized) library else null
+        trackTitle.text = title?.takeIf { it.isNotBlank() }
+            ?: libraryOrNull?.title?.takeIf { it.isNotBlank() }
+            ?: FileUtils.nameWithoutExtension(filePath)
+        val author = libraryOrNull?.author?.takeIf { it.isNotBlank() }
+        artistName.text = author
+        artistName.visibility = if (author != null) View.VISIBLE else View.GONE
 
         val isDarkMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
         val bgRes = if (isDarkMode) R.drawable.bg_player_dark else R.drawable.bg_player_white

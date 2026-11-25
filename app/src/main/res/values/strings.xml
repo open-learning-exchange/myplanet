@@ -141,6 +141,8 @@
     <string name="what_would">What would you like to share?</string>
     <string name="delete_record">Are you sure you want to delete the following ?</string>
     <string name="edit_post">Edit Post</string>
+    <string name="delete_post">Delete post</string>
+    <string name="notifications">Notifications</string>
     <string name="get_started">GET STARTED</string>
     <string name="year">Year</string>
     <string name="publisher">Publisher</string>
@@ -712,10 +714,10 @@
     <string name="bp_must_be_between_60_40_and_300_200">Bp must be between 60/40 and 300/200</string>
     <string name="systolic_and_diastolic_must_be_numbers">Systolic and diastolic must be numbers</string>
     <string name="added_successfully">Added successfully</string>
-    <string name="invalid_input_must_be_between_30_and_40">Body temperature, must be between 30 and 40</string>
-    <string name="invalid_input_must_be_between_40_and_120">Pulse rate, must be between 40 and 120</string>
+    <string name="invalid_temperature_range">Body temperature, must be between 30 and 45</string>
+    <string name="invalid_pulse_range">Pulse rate, must be between 20 and 250</string>
     <string name="invalid_input_must_be_between_1_and_250">Height, must be between 1 and 250</string>
-    <string name="invalid_input_must_be_between_1_and_150">Weight, must be between 1 and 150</string>
+    <string name="invalid_weight_range">Weight, must be between 0.5 and 500</string>
     <string name="unable_to_add_health_record">Unable to add health record.</string>
     <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">Are you sure you want to cancel adding this resource? Your data will be lost</string>
     <string name="yes_i_want_to_exit">"Yes, I want to exit. "</string>
@@ -1159,6 +1161,9 @@
     <string name="no_reports">No reports available</string>
     <string name="fetching_ai_providers">Fetching AI providers…</string>
     <string name="adopt_survey">Adopt survey</string>
+    <string name="adopt_survey_to">Adopt survey to…</string>
+    <string name="survey_adopted_to">Survey adopted to %1$s</string>
+    <string name="no_survey_adoption_targets">Join a team or enterprise to adopt this survey</string>
     <string name="survey_adopted_successfully">Survey adopted successfully!</string>
     <string name="user_verification_in_progress">User verification in progress. Please wait while we process the data.</string>
     <string name="go_to_mylibrary">Go To MyLibrary</string>
@@ -1447,4 +1452,7 @@
 
     <string name="playback_speed">Playback Speed</string>
     <string name="playback_speed_format">%1$sx</string>
+    <string name="add_cover_image">Add Cover Image</string>
+    <string name="change_cover_image">Change Cover Image</string>
+    <string name="team_cover_image">Team cover image</string>
 </resources>

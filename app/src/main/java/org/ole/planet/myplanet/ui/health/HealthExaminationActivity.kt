@@ -35,6 +35,12 @@ import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.TimeUtils.getAge
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
+import org.ole.planet.myplanet.utils.HEIGHT_RANGE
+import org.ole.planet.myplanet.utils.PULSE_RANGE
+import org.ole.planet.myplanet.utils.TEMPERATURE_RANGE
+import org.ole.planet.myplanet.utils.WEIGHT_RANGE
+import org.ole.planet.myplanet.utils.formatVitalReading
+import org.ole.planet.myplanet.utils.isValidVitalReading
 import org.ole.planet.myplanet.utils.parseVitalReading
 
 @AndroidEntryPoint
@@ -140,11 +146,11 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             val encrypted = user?.let { examination?.getEncryptedDataAsJson(it) }
             savedCreatedBy = encrypted?.let { runCatching { GsonUtils.gson.fromJson(it, Examination::class.java) }.getOrNull() }?.createdBy
         } else if (examination != null) {
-            binding.etTemperature.setText("%.1f".format(Locale.ROOT, examination?.temperature))
-            binding.etPulseRate.setText(getString(R.string.number_placeholder, examination?.pulse))
+            binding.etTemperature.setText(formatVitalReading(examination?.temperature))
+            binding.etPulseRate.setText(examination?.pulse?.takeIf { it > 0 }?.let { getString(R.string.number_placeholder, it) }.orEmpty())
             binding.etBloodpressure.setText(examination?.bp?.takeUnless { it == "null" }.orEmpty())
-            binding.etHeight.setText("%.1f".format(Locale.ROOT, examination?.height))
-            binding.etWeight.setText("%.1f".format(Locale.ROOT, examination?.weight))
+            binding.etHeight.setText(formatVitalReading(examination?.height))
+            binding.etWeight.setText(formatVitalReading(examination?.weight))
             binding.etVision.setText(examination?.vision)
             binding.etHearing.setText(examination?.hearing)
             val encrypted = user?.let { examination?.getEncryptedDataAsJson(it) }
@@ -341,26 +347,18 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
     private val isValidInput: Boolean
         get() {
 
-            val isValidTemp = (parseVitalReading("${binding.etTemperature.text}".trim { it <= ' ' }) in 30.0..40.0 ||
-                        parseVitalReading("${binding.etTemperature.text}".trim { it <= ' ' }) == 0f) &&
-                    "${binding.etTemperature.text}".trim { it <= ' ' }.isNotEmpty()
-            val isValidPulse = (getInt("${binding.etPulseRate.text}".trim { it <= ' ' }) in 40..120 ||
-                    parseVitalReading("${binding.etPulseRate.text}".trim { it <= ' ' }) == 0f) &&
-                    "${binding.etPulseRate.text}".trim { it <= ' ' }.isNotEmpty()
-            val isValidHeight = (parseVitalReading("${binding.etHeight.text}".trim { it <= ' ' }) in 1.0..250.0 ||
-                    parseVitalReading("${binding.etHeight.text}".trim { it <= ' ' }) == 0f) &&
-                    "${binding.etHeight.text}".trim { it <= ' ' }.isNotEmpty()
-            val isValidWeight = (parseVitalReading("${binding.etWeight.text}".trim { it <= ' ' }) in 1.0..150.0 ||
-                    parseVitalReading("${binding.etWeight.text}".trim { it <= ' ' }) == 0f) &&
-                    "${binding.etWeight.text}".trim { it <= ' ' }.isNotEmpty()
+            val isValidTemp = isValidVitalReading("${binding.etTemperature.text}", TEMPERATURE_RANGE)
+            val isValidPulse = isValidVitalReading("${binding.etPulseRate.text}", PULSE_RANGE)
+            val isValidHeight = isValidVitalReading("${binding.etHeight.text}", HEIGHT_RANGE)
+            val isValidWeight = isValidVitalReading("${binding.etWeight.text}", WEIGHT_RANGE)
             if (!isValidTemp) {
-                binding.etTemperature.error = getString(R.string.invalid_input_must_be_between_30_and_40)
+                binding.etTemperature.error = getString(R.string.invalid_temperature_range)
                 scrollToView(binding.etTemperature)
-                Utilities.toast(this, getString(R.string.invalid_input_must_be_between_30_and_40))
+                Utilities.toast(this, getString(R.string.invalid_temperature_range))
             }
             if (!isValidPulse) {
-                binding.etPulseRate.error = getString(R.string.invalid_input_must_be_between_40_and_120)
-                Utilities.toast(this, getString(R.string.invalid_input_must_be_between_40_and_120))
+                binding.etPulseRate.error = getString(R.string.invalid_pulse_range)
+                Utilities.toast(this, getString(R.string.invalid_pulse_range))
                 scrollToView(binding.etPulseRate)
             }
             if (!isValidHeight) {
@@ -369,8 +367,8 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
                 scrollToView(binding.etHeight)
             }
             if (!isValidWeight) {
-                binding.etWeight.error = getString(R.string.invalid_input_must_be_between_1_and_150)
-                Utilities.toast(this, getString(R.string.invalid_input_must_be_between_1_and_150))
+                binding.etWeight.error = getString(R.string.invalid_weight_range)
+                Utilities.toast(this, getString(R.string.invalid_weight_range))
                 scrollToView(binding.etWeight)
             }
             return isValidTemp && isValidHeight && isValidPulse && isValidWeight

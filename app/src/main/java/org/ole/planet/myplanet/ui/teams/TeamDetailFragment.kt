@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.widget.ViewPager2
@@ -54,6 +55,8 @@ class TeamDetailFragment : BaseTeamFragment() {
     private var directTeamId: String? = null
     private val teamLastPage = mutableMapOf<String, String>()
     private var pageConfigs: List<TeamPageConfig> = emptyList()
+    private var canAddDocuments = false
+    private val pagesWithOwnFab = setOf(DocumentsPage.id, ResourcesPage.id, TasksPage.id, FinancesPage.id, SurveyPage.id)
 
     private fun pageIndexById(pageId: String?): Int? {
         pageId ?: return null
@@ -130,7 +133,8 @@ class TeamDetailFragment : BaseTeamFragment() {
     private fun renderPlaceholder() {
         binding.title.text = directTeamName?.takeIf { it.isNotBlank() } ?: getString(R.string.loading_teams)
         binding.subtitle.text = directTeamType ?: ""
-        binding.btnAddDoc.isEnabled = false
+        canAddDocuments = false
+        updateAddDocFabVisibility()
         binding.btnLeave.isEnabled = false
         binding.viewPager2.adapter = null
     }
@@ -138,6 +142,8 @@ class TeamDetailFragment : BaseTeamFragment() {
     private fun setupTeamDetails(isMyTeam: Boolean, user: UserEntity?) {
         binding.title.text = getEffectiveTeamName()
         binding.subtitle.text = getEffectiveTeamType()
+        val current = team
+        TeamCoverImage.load(binding.teamCover, current?._id, current?.imageName, current?._rev)
 
         if (!isMyTeam) {
             setupNonMyTeamButtons(user)
@@ -189,6 +195,7 @@ class TeamDetailFragment : BaseTeamFragment() {
                                 teamLastPage[teamId] = it
                             }
                         }
+                        updateAddDocFabVisibility()
 
                     }
                 }
@@ -201,8 +208,8 @@ class TeamDetailFragment : BaseTeamFragment() {
     }
 
     private fun setupNonMyTeamButtons(user: UserEntity?) {
-        binding.btnAddDoc.isEnabled = false
-        binding.btnAddDoc.visibility = View.GONE
+        canAddDocuments = false
+        updateAddDocFabVisibility()
         binding.btnLeave.isEnabled = true
         binding.btnLeave.visibility = View.VISIBLE
 
@@ -213,8 +220,8 @@ class TeamDetailFragment : BaseTeamFragment() {
     }
 
     private fun setupMyTeamButtons(user: UserEntity?) {
-        binding.btnAddDoc.isEnabled = true
-        binding.btnAddDoc.visibility = View.VISIBLE
+        canAddDocuments = true
+        updateAddDocFabVisibility()
         binding.btnLeave.isEnabled = true
         val memberCount = teamViewModel.memberCount.value
         binding.btnLeave.visibility = if (memberCount != null && memberCount <= 1) {
@@ -234,6 +241,8 @@ class TeamDetailFragment : BaseTeamFragment() {
                                 Utilities.toast(activity, getString(R.string.left_team))
                                 val lastPageId =
                                     currentTeam._id?.let { teamLastPage[it] } ?: arguments?.getString("navigateToPage")
+                                canAddDocuments = false
+                                updateAddDocFabVisibility()
                                 setupViewPager(false, lastPageId)
                                 binding.llActionButtons.visibility = View.GONE
                             }
@@ -242,7 +251,7 @@ class TeamDetailFragment : BaseTeamFragment() {
                 }.setNegativeButton(R.string.no, null).show()
         }
 
-        binding.btnAddDoc.setOnClickListener {
+        binding.fabAddDoc.setOnClickListener {
             MainApplication.showDownload = true
             val isEnterprise = team?.type == "enterprise"
             val targetPageId = if (isEnterprise) DocumentsPage.id else CoursesPage.id
@@ -266,6 +275,12 @@ class TeamDetailFragment : BaseTeamFragment() {
                 }
             }
         }
+    }
+
+    private fun updateAddDocFabVisibility() {
+        val currentPageId = (binding.viewPager2.adapter as? TeamPagerAdapter)
+            ?.getPageConfig(binding.viewPager2.currentItem)?.id
+        binding.fabAddDoc.isVisible = canAddDocuments && currentPageId !in pagesWithOwnFab
     }
 
     private fun refreshTeamDetails() {
