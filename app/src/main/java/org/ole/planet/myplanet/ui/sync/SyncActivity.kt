@@ -62,7 +62,6 @@ import org.ole.planet.myplanet.services.BroadcastService
 import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.SyncManager
-import org.ole.planet.myplanet.services.sync.TransactionSyncManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.Constants.autoSynFeature
@@ -144,9 +143,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
     @Inject
     lateinit var syncManager: SyncManager
-
-    @Inject
-    lateinit var transactionSyncManager: TransactionSyncManager
 
     @Inject
     @ApplicationScope
@@ -643,7 +639,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
         val prefData = prefData
         val syncRepository = syncRepository
-        val transactionSyncManager = transactionSyncManager
         val timeProvider = timeProvider
         val applicationScope = applicationScope
         loginNetworkJob = isNetworkConnectedFlow.onEach { isConnected ->
@@ -658,7 +653,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                             if (state is SyncUiState.Success) {
                                 prefData.setLastUsageUploaded(timeProvider.now())
                             }
-                            transactionSyncManager.syncDb("login_activities")
                         }
                     }
                 }

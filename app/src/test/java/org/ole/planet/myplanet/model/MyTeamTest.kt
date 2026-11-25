@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.model
 
+import com.google.gson.JsonParser
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -57,5 +59,38 @@ class MyTeamTest {
         assertTrue(serialized.has("teamId"))
         assertFalse(serialized.has("name"))
         assertFalse("Null userPlanetCode should be stripped", serialized.has("userPlanetCode"))
+    }
+
+    @Test
+    fun serialize_writesCoverFileNameOnTeamsOnly() {
+        val team = MyTeam().apply { _id = "t1"; type = "team"; imageName = "cover.webp" }
+        assertEquals("cover.webp", MyTeam.serialize(team).get("coverFileName").asString)
+
+        val transaction = MyTeam().apply { _id = "x1"; type = "credit"; docType = "transaction"; imageName = "receipt.png" }
+        assertFalse(MyTeam.serialize(transaction).has("coverFileName"))
+    }
+
+    @Test
+    fun populate_prefersCoverFileNameOverFirstAttachment() {
+        val doc = JsonParser.parseString(
+            """{"_id":"t1","type":"team","coverFileName":"b.webp","_attachments":{"a.png":{"stub":true},"b.webp":{"stub":true}}}"""
+        ).asJsonObject
+        val team = MyTeam().apply { _id = "t1" }
+
+        MyTeam.populateTeamFields(doc, team)
+
+        assertEquals("b.webp", team.imageName)
+    }
+
+    @Test
+    fun populate_keepsLocallyPickedCoverUntilUploaded() {
+        val doc = JsonParser.parseString(
+            """{"_id":"t1","type":"team","coverFileName":"server.webp","_attachments":{"server.webp":{"stub":true}}}"""
+        ).asJsonObject
+        val team = MyTeam().apply { _id = "t1"; updated = true; imageName = "picked.jpg" }
+
+        MyTeam.populateTeamFields(doc, team)
+
+        assertEquals("picked.jpg", team.imageName)
     }
 }
