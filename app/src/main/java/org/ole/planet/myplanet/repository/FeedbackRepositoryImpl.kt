@@ -36,12 +36,12 @@ class FeedbackRepositoryImpl @Inject constructor(
         val feedback = Feedback()
         feedback.id = UUID.randomUUID().toString()
         if (state != null) {
-            feedback.title = "Question regarding /$state"
+            feedback.title = "$type regarding /$state"
             feedback.url = "/$state"
             feedback.state = state
             feedback.item = item
         } else {
-            feedback.title = "Question regarding /"
+            feedback.title = "$type regarding /"
             feedback.url = "/"
         }
         val timestamp = timeProvider.now()

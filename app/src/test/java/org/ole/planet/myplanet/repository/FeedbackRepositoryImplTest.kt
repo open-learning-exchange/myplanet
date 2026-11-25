@@ -48,6 +48,12 @@ class FeedbackRepositoryImplTest {
     }
 
     @Test
+    fun createFeedback_titlesFeedbackByItsType() {
+        assertEquals("Bug regarding /", repository.createFeedback("user1", "No", "Bug", "msg", null, null).title)
+        assertEquals("Suggestion regarding /courses", repository.createFeedback("user1", "No", "Suggestion", "msg", "c1", "courses").title)
+    }
+
+    @Test
     fun createFeedback_usesTimeProviderNow() {
         every { timeProvider.now() } returns 123456789L
 
