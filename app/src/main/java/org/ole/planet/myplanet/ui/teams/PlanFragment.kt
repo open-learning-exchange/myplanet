@@ -10,6 +10,8 @@ import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
@@ -18,11 +20,16 @@ import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentPlanBinding
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.utils.AttachmentReader
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
+@AndroidEntryPoint
 class PlanFragment : BaseTeamFragment() {
+    @Inject
+    lateinit var attachmentReader: AttachmentReader
+    private val coverPicker = TeamCoverPicker(this)
     private var _binding: FragmentPlanBinding? = null
     private val binding get() = _binding!!
     private var isEnterprise: Boolean = false
@@ -96,6 +103,7 @@ class PlanFragment : BaseTeamFragment() {
             .setPositiveButton(context.getString(R.string.save), null)
             .setNegativeButton(context.getString(R.string.cancel), null)
             .create()
+        dialog.setOnDismissListener { coverPicker.unbind() }
 
         dialog.setOnShowListener {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
@@ -106,6 +114,7 @@ class PlanFragment : BaseTeamFragment() {
     }
 
     private fun setupDialogFields(binding: AlertCreateTeamBinding, team: MyTeam) {
+        coverPicker.bind(binding, team._id, team.imageName, team._rev)
         binding.spnTeamType.visibility = if (isEnterprise) View.GONE else View.VISIBLE
         binding.etServices.visibility = if (isEnterprise) View.VISIBLE else View.GONE
         binding.etRules.visibility = if (isEnterprise) View.VISIBLE else View.GONE
@@ -164,6 +173,7 @@ class PlanFragment : BaseTeamFragment() {
             val isPublic = binding.switchPublic.isChecked
 
             try {
+                val cover = coverPicker.read(attachmentReader)
                 val wasUpdated = teamsRepository.updateTeamDetails(
                     teamId = teamIdentifier,
                     name = name,
@@ -173,6 +183,7 @@ class PlanFragment : BaseTeamFragment() {
                     teamType = teamType,
                     isPublic = isPublic,
                     createdBy = userId,
+                    cover = cover,
                 )
 
                 if (wasUpdated) {
@@ -186,6 +197,7 @@ class PlanFragment : BaseTeamFragment() {
                         this.description = descriptionToSave
                         this.teamType = teamType
                         this.isPublic = isPublic
+                        cover?.name?.let { this.imageName = it }
                         this.createdBy = userId.takeIf { it.isNotBlank() } ?: this.createdBy
                         this.updated = true
                     }
