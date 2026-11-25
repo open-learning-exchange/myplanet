@@ -337,9 +337,11 @@ class CoursesAdapter(
         }
 
         fun bind(course: Course) {
-            val subject = CourseSubjectClassifier.classify(course.subjectLevel)
+            val subject = CourseSubjectClassifier.classify(course.courseTitle)
             CoursesItemUtils.bindCover(context, viewMode, course, subject, binding.coverContainer, binding.ivCover, binding.ivSubjectIcon)
-            binding.tvSubjectLabel.text = context.getString(CoursesItemUtils.subjectLabelRes(subject))
+            val labelRes = CoursesItemUtils.subjectLabelRes(subject)
+            binding.tvSubjectLabel.visibility = if (labelRes == null) View.GONE else View.VISIBLE
+            labelRes?.let { binding.tvSubjectLabel.text = context.getString(it) }
             binding.title.text = course.courseTitle
             binding.tvMeta.text = CoursesItemUtils.buildMetaLine(context, course)
             updateVisibilityForMyCourse(course, binding.isMyCourse, binding.checkbox)
@@ -385,7 +387,7 @@ class CoursesAdapter(
         }
 
         fun bind(course: Course) {
-            val subject = CourseSubjectClassifier.classify(course.subjectLevel)
+            val subject = CourseSubjectClassifier.classify(course.courseTitle)
             CoursesItemUtils.bindCover(context, viewMode, course, subject, binding.coverContainer, binding.ivCover, binding.ivSubjectIcon)
             binding.title.text = course.courseTitle
             binding.tvMeta.text = CoursesItemUtils.buildMetaLine(context, course)

@@ -9,13 +9,17 @@ import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.room.dao.FeedbackDao
 import org.ole.planet.myplanet.model.Feedback
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.distinctByContent
 
 @Singleton
 class FeedbackRepositoryImpl @Inject constructor(
-    private val feedbackDao: FeedbackDao, private val gson: Gson, private val timeProvider: TimeProvider
+    private val feedbackDao: FeedbackDao,
+    private val gson: Gson,
+    private val timeProvider: TimeProvider,
+    private val sharedPrefManager: SharedPrefManager,
 ) : FeedbackRepository, FeedbackSyncWriter {
 
     override suspend fun createAndSaveFeedback(
@@ -47,7 +51,7 @@ class FeedbackRepositoryImpl @Inject constructor(
         feedback.status = "Open"
         feedback.priority = urgent
         feedback.type = type
-        feedback.parentCode = "dev"
+        feedback.parentCode = sharedPrefManager.getParentCode()
         val obj = JsonObject().apply {
             addProperty("message", message)
             addProperty("time", timestamp.toString())
