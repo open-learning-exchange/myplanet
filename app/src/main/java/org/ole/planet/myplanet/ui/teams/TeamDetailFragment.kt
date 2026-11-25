@@ -139,7 +139,7 @@ class TeamDetailFragment : BaseTeamFragment() {
         binding.title.text = getEffectiveTeamName()
         binding.subtitle.text = getEffectiveTeamType()
         val current = team
-        TeamCover.load(binding.teamCover, current?._id, current?.imageName, current?._rev)
+        TeamCoverImage.load(binding.teamCover, current?._id, current?.imageName, current?._rev)
 
         if (!isMyTeam) {
             setupNonMyTeamButtons(user)

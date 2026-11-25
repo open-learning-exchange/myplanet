@@ -43,7 +43,7 @@ import org.ole.planet.myplanet.ui.dashboard.ItemType
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.life.LifeFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
-import org.ole.planet.myplanet.ui.teams.TeamCover
+import org.ole.planet.myplanet.ui.teams.TeamCoverImage
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.teams.TeamFragment
 import org.ole.planet.myplanet.ui.user.UserProfileFragment
@@ -270,7 +270,7 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
     }
 
     private fun loadTeamCover(chip: View, team: MyTeam) {
-        val (model, signature) = TeamCover.model(chip.context, team._id, team.imageName, team._rev) ?: return
+        val (model, signature) = TeamCoverImage.model(chip.context, team._id, team.imageName, team._rev) ?: return
         val cover = chip.findViewById<ImageView>(R.id.cover)
         val content = chip.findViewById<View>(R.id.content)
         val name = chip.findViewById<TextView>(R.id.tv_name)
