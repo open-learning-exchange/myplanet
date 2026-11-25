@@ -8,7 +8,7 @@ log="${RUNNER_TEMP:-/tmp}/gradle-retry.log"
 max_retries="${GRADLE_CI_MAX_RETRIES:-3}"
 backoffs=(${GRADLE_CI_BACKOFFS:-20 60 120})
 args=(-I "$init" -Dorg.gradle.internal.repository.max.retries=5 -Dorg.gradle.internal.repository.initial.backoff=2000 "$@")
-transient='Too Many Requests|status code (429|5[0-9][0-9])|Could not (GET|HEAD) |Read timed out|Connect timed out|Connection reset|Premature end of|Remote host terminated|Received fatal alert|Unexpected end of file'
+transient='Too Many Requests|status code (429|5[0-9][0-9])|Could not (GET|HEAD) |could not resolve plugin artifact|Could not resolve all (artifacts|files) |Read timed out|Connect timed out|Connection reset|Premature end of|Remote host terminated|Received fatal alert|Unexpected end of file'
 
 attempt=0
 incremental_retried=0
