@@ -496,7 +496,7 @@
     <string name="submit">Ku Dir</string>
     <string name="our_courses">Koorsadayaashay</string>
     <string name="file">Faylka: %s</string>
-    <string name="recording_audio">Furayaasha Sireyska......</string>
+    <string name="recording_audio_elapsed">Cod ayaa la duubayaa… %1$s</string>
     <string name="selected">"La Xulo: "</string>
     <string name="last_sync">Iswaafajintii ugu dambeysay ee server-ka: %s</string>
     <string name="last_syncs">Halkan jeedadda ee Hore</string>

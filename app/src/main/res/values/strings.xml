@@ -516,7 +516,7 @@
     <string name="submit">Submit</string>
     <string name="our_courses">Our Courses</string>
     <string name="file">File: %s</string>
-    <string name="recording_audio">Recording audio…</string>
+    <string name="recording_audio_elapsed">Recording audio… %1$s</string>
     <string name="selected">"Selected: "</string>
     <string name="last_sync">Last sync with server: %s</string>
     <string name="last_syncs">LastSync</string>

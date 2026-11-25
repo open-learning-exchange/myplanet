@@ -496,7 +496,7 @@
     <string name="submit">पेश गर्नुहोस्</string>
     <string name="our_courses">हाम्रा कोर्सहरू</string>
     <string name="file">फाइल: %s</string>
-    <string name="recording_audio">आवाज रेकर्ड गर्दै......</string>
+    <string name="recording_audio_elapsed">आवाज रेकर्ड गर्दै… %1$s</string>
     <string name="selected">"छानिएको: "</string>
     <string name="last_sync">सर्भरसँग अन्तिम समिकरण: %s</string>
     <string name="last_syncs">अन्तिमसर्वरसिङ्क</string>
