@@ -165,7 +165,7 @@ class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentV
             ImageUtils.loadPlaceholderImage(currentUser.userImage, binding.userImage, userImageSize)
             binding.txtEmail.text = StringUtils.checkNA(currentUser.email)
             binding.txtLanguage.text = StringUtils.checkNA(currentUser.language)
-            binding.txtDob.text = TimeUtils.formatDateToDDMMYYYY(currentUser.dob).ifEmpty { "dd-MM-yyyy" }
+            binding.txtDob.text = StringUtils.checkNA(TimeUtils.formatDateToDDMMYYYY(currentUser.dob))
 
             if (healthRecord != null) {
                 val (mh, mm, list, userMap) = healthRecord

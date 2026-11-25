@@ -23,6 +23,16 @@
                 android:orientation="horizontal"
                 android:padding="8dp">
 
+                <com.google.android.material.imageview.ShapeableImageView
+                    android:id="@+id/team_cover"
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginStart="8dp"
+                    android:contentDescription="@string/team_cover_image"
+                    android:scaleType="centerCrop"
+                    android:visibility="gone"
+                    app:shapeAppearanceOverlay="@style/ShapeAppearance.MyPlanet.CoverRounded" />
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -54,13 +64,6 @@
                     android:layout_gravity="right">
 
                     <Button
-                        android:id="@+id/btn_add_doc"
-                        style="@style/YellowButtons"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:text="@string/add_documents" />
-                    <Button
                         android:id="@+id/btn_leave"
                         style="@style/YellowButtons"
                         android:layout_width="wrap_content"
@@ -91,4 +94,15 @@
                 android:layout_height="match_parent"/>
         </LinearLayout>
     </LinearLayout>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_add_doc"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/padding_large"
+        android:contentDescription="@string/add_documents"
+        android:src="@drawable/ic_add_white"
+        android:visibility="gone"
+        app:tint="@color/md_white_1000" />
 </FrameLayout>

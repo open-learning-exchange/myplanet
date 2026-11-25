@@ -125,6 +125,10 @@ class RatingsRepositoryImpl @Inject constructor(
         return ratingDao.markUploaded(id, remoteId, remoteRev) > 0
     }
 
+    override suspend fun markRatingRetryUploaded(id: String, remoteRev: String?, uploadedTime: Long?): Boolean {
+        return ratingDao.markRetryUploaded(id, remoteRev, uploadedTime) > 0
+    }
+
     private fun Rating.toRatingEntry(): RatingEntry =
         RatingEntry(
             id = id,

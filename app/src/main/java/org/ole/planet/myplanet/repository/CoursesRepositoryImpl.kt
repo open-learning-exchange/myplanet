@@ -659,6 +659,8 @@ class CoursesRepositoryImpl @Inject constructor(
 
         if (courses.isEmpty() && steps.isEmpty() && exams.isEmpty() && questions.isEmpty()) return processedCount
 
+        preserveExamDates(exams)
+
         appDatabase.withTransaction {
             if (courses.isNotEmpty()) courseDao.upsertAll(courses)
             if (steps.isNotEmpty()) courseStepDao.upsertAll(steps)
@@ -736,6 +738,19 @@ class CoursesRepositoryImpl @Inject constructor(
                     )
 
         return ParsedCourseSyncPayload(course, parsedSteps, parsedExams, parsedQuestions)
+    }
+
+    // The exam/survey copy embedded in a course step carries no dates; keep the ones the
+    // exams-db sync stored rather than overwriting them with 0 (rendered as Jan 1, 1970).
+    private suspend fun preserveExamDates(exams: List<StepExam>) {
+        if (exams.isEmpty()) return
+        val existingById = examDao.getByIds(exams.map { it.id }).associateBy { it.id }
+        exams.forEach { exam ->
+            val existing = existingById[exam.id] ?: return@forEach
+            if (exam.createdDate <= 0) exam.createdDate = existing.createdDate
+            if (exam.updatedDate <= 0) exam.updatedDate = existing.updatedDate
+            if (exam.adoptionDate <= 0) exam.adoptionDate = existing.adoptionDate
+        }
     }
 
     private fun collectRoomExam(

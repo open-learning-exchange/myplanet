@@ -9,6 +9,7 @@ import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.HiltTestApplication
 import javax.inject.Inject
 import kotlinx.coroutines.runBlocking
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
@@ -18,6 +19,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.model.MyLibrary
 import org.robolectric.Robolectric
+import org.robolectric.android.controller.ActivityController
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowLooper
@@ -32,18 +34,28 @@ class AddResourceActivityRotationTest {
 
     @Inject
     lateinit var myLibraryDao: MyLibraryDao
+    
+    private val controllers = mutableListOf<ActivityController<AddResourceActivity>>()
 
     @Before
     fun setUp() {
         hiltRule.inject()
     }
 
+    @After
+    fun tearDown() {
+        controllers.forEach { it.pause().stop().destroy() }
+    }
+
+    private fun launch(intent: Intent) =
+        Robolectric.buildActivity(AddResourceActivity::class.java, intent).setup().also { controllers += it }
+
     private fun intent(block: Intent.() -> Unit = {}) =
         Intent(ApplicationProvider.getApplicationContext(), AddResourceActivity::class.java).apply(block)
 
     @Test
     fun `add mode keeps chosen levels and subjects across rotation`() {
-        val controller = Robolectric.buildActivity(AddResourceActivity::class.java, intent()).setup()
+        val controller = launch(intent())
         controller.get().apply {
             levels?.add("Lower Primary")
             subjects?.add("Mathematics")
@@ -69,10 +81,10 @@ class AddResourceActivityRotationTest {
                 description = "Saved description"
             })
         }
-        val controller = Robolectric.buildActivity(AddResourceActivity::class.java, intent {
+        val controller = launch(intent {
             putExtra("resource_id", "res1")
             putExtra("is_edit_mode", true)
-        }).setup()
+        })
         val titleField = controller.get().findViewById<EditText>(R.id.et_title)
         while (titleField.text.toString() != "Saved title") {
             ShadowLooper.idleMainLooper()

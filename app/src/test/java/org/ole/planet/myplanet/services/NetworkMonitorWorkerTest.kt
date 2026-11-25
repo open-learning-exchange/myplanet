@@ -17,6 +17,9 @@ import io.mockk.slot
 import io.mockk.unmockkAll
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.plus
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -123,5 +126,35 @@ class NetworkMonitorWorkerTest {
         val result = worker.doWork()
 
         assertEquals(Result.retry(), result)
+    }
+
+    @Test
+    fun observeReconnects_rearmsMonitorEachTimeTheNetworkComesBack() = runTest {
+        val connected = MutableStateFlow(true)
+        NetworkMonitorWorker.observeReconnects(
+            context, connected, backgroundScope + UnconfinedTestDispatcher(testScheduler)
+        )
+
+        verify(exactly = 0) { workManagerImpl.enqueueUniqueWork("network_monitor_work", any(), any<OneTimeWorkRequest>()) }
+
+        connected.value = false
+        connected.value = true
+        verify(exactly = 1) { workManagerImpl.enqueueUniqueWork("network_monitor_work", any(), any<OneTimeWorkRequest>()) }
+
+        connected.value = false
+        connected.value = true
+        verify(exactly = 2) { workManagerImpl.enqueueUniqueWork("network_monitor_work", any(), any<OneTimeWorkRequest>()) }
+    }
+
+    @Test
+    fun observeReconnects_firesWhenStartingOfflineAndThenConnecting() = runTest {
+        val connected = MutableStateFlow(false)
+        NetworkMonitorWorker.observeReconnects(
+            context, connected, backgroundScope + UnconfinedTestDispatcher(testScheduler)
+        )
+
+        connected.value = true
+
+        verify(exactly = 1) { workManagerImpl.enqueueUniqueWork("network_monitor_work", any(), any<OneTimeWorkRequest>()) }
     }
 }
