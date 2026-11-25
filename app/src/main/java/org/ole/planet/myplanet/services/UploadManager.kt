@@ -22,8 +22,8 @@ import org.ole.planet.myplanet.services.upload.TeamsUploader
 import org.ole.planet.myplanet.services.upload.UploadConfigs
 import org.ole.planet.myplanet.services.upload.UploadCoordinator
 import org.ole.planet.myplanet.services.upload.UploadError
-import org.ole.planet.myplanet.services.upload.UploadLocks
 import org.ole.planet.myplanet.services.upload.UploadResult
+import org.ole.planet.myplanet.services.upload.UploadSerializer
 import org.ole.planet.myplanet.services.upload.UploadedItem
 import org.ole.planet.myplanet.services.upload.VoicesUploader
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -68,7 +68,7 @@ class UploadManager @Inject constructor(
             }
 
             try {
-                UploadLocks.withLock(LOCK_MYPLANET_ACTIVITIES) {
+                UploadSerializer.withLock(LOCK_MYPLANET_ACTIVITIES) {
                     activitiesRepository.uploadMyPlanetActivities(model)
                 }
                 notifyListener(listener, "My planet activities uploaded successfully")
@@ -101,7 +101,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadAchievement() {
-        UploadLocks.withLock(LOCK_ACHIEVEMENTS) { achievementUploader.uploadAchievement() }
+        UploadSerializer.withLock(LOCK_ACHIEVEMENTS) { achievementUploader.uploadAchievement() }
     }
 
     private suspend fun uploadCourseProgress() {
@@ -112,7 +112,7 @@ class UploadManager @Inject constructor(
         uploadCoordinator.uploadRoom(uploadConfigs.Feedback)
 
     suspend fun uploadSubmitPhotos(listener: OnSuccessListener?) {
-        val resultMessage = UploadLocks.withLock(LOCK_SUBMIT_PHOTOS) {
+        val resultMessage = UploadSerializer.withLock(LOCK_SUBMIT_PHOTOS) {
             photoUploader.uploadSubmitPhotos(listener)
         }
         resultMessage?.let {
@@ -199,7 +199,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadTeams() {
-        UploadLocks.withLock(LOCK_TEAMS) { teamsUploader.uploadTeams() }
+        UploadSerializer.withLock(LOCK_TEAMS) { teamsUploader.uploadTeams() }
     }
 
     suspend fun uploadUserActivities(listener: OnSuccessListener) {
@@ -214,7 +214,7 @@ class UploadManager @Inject constructor(
         }
 
         try {
-            UploadLocks.withLock(LOCK_LOGIN_ACTIVITIES) { activitiesRepository.uploadActivities() }
+            UploadSerializer.withLock(LOCK_LOGIN_ACTIVITIES) { activitiesRepository.uploadActivities() }
 
             uploadTeamActivities()
 
@@ -233,7 +233,7 @@ class UploadManager @Inject constructor(
         uploadCoordinator.uploadRoom(uploadConfigs.Rating)
 
     suspend fun uploadNews() {
-        UploadLocks.withLock(LOCK_NEWS) { voicesUploader.uploadNews() }
+        UploadSerializer.withLock(LOCK_NEWS) { voicesUploader.uploadNews() }
         uploadNewsActivities()
     }
 

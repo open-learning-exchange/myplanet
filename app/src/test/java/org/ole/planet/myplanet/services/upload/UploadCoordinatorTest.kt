@@ -100,7 +100,7 @@ class UploadCoordinatorTest {
             modelClass = Submission::class,
             endpoint = "test_endpoint",
             fetchPendingItems = { items },
-            serializer = UploadSerializer.Simple { JsonObject() },
+            serializer = PayloadSerializer.Simple { JsonObject() },
             idExtractor = { it.id },
             dbIdExtractor = { it._id },
             batchSize = 10,
@@ -141,7 +141,7 @@ class UploadCoordinatorTest {
             modelClass = Submission::class,
             endpoint = "test_endpoint",
             fetchPendingItems = { listOf(item) },
-            serializer = UploadSerializer.Simple { JsonObject().apply { addProperty("answer", "local edit") } },
+            serializer = PayloadSerializer.Simple { JsonObject().apply { addProperty("answer", "local edit") } },
             idExtractor = { it.id },
             dbIdExtractor = { it._id },
             markUploaded = { markUploadedCalled = true; emptyList() }
@@ -207,7 +207,7 @@ class UploadCoordinatorTest {
             endpoint = "feedback",
             modelClassName = "Feedback",
             fetchPendingItems = { listOf(item) },
-            serializer = UploadSerializer.Simple { localDoc },
+            serializer = PayloadSerializer.Simple { localDoc },
             idExtractor = { it.id },
             mergeConflict = Feedback::mergeConflict,
             markUploaded = { emptyList() }
@@ -252,7 +252,7 @@ class UploadCoordinatorTest {
             modelClass = Submission::class,
             endpoint = "test_endpoint",
             fetchPendingItems = { listOf(item) },
-            serializer = UploadSerializer.Simple { JsonObject() },
+            serializer = PayloadSerializer.Simple { JsonObject() },
             idExtractor = { it.id },
             dbIdExtractor = { it._id },
             mergeConflict = { _, _ -> null },
@@ -290,7 +290,7 @@ class UploadCoordinatorTest {
             modelClass = Submission::class,
             endpoint = "test_endpoint",
             fetchPendingItems = { listOf(item) },
-            serializer = UploadSerializer.Simple { JsonObject() },
+            serializer = PayloadSerializer.Simple { JsonObject() },
             idExtractor = { it.id },
             dbIdExtractor = { it._id },
             mergeConflict = { _, server -> server },
@@ -326,7 +326,7 @@ class UploadCoordinatorTest {
             modelClass = Submission::class,
             endpoint = "test_endpoint",
             fetchPendingItems = { listOf(item) },
-            serializer = UploadSerializer.Simple { JsonObject() },
+            serializer = PayloadSerializer.Simple { JsonObject() },
             idExtractor = { it.id },
             dbIdExtractor = { it._id },
             mergeConflict = { _, server -> server },
@@ -377,7 +377,7 @@ class UploadCoordinatorTest {
             endpoint = "test_room_endpoint",
             modelClassName = "TestRoomItem",
             fetchPendingItems = { items },
-            serializer = UploadSerializer.Simple { item ->
+            serializer = PayloadSerializer.Simple { item ->
                 JsonObject().apply {
                     addProperty("idx", item.id.substringAfterLast("room-local-").toInt())
                 }
@@ -421,7 +421,7 @@ class UploadCoordinatorTest {
             endpoint = "test_room_endpoint",
             modelClassName = "TestRoomItem",
             fetchPendingItems = { listOf(item) },
-            serializer = UploadSerializer.Simple { JsonObject() },
+            serializer = PayloadSerializer.Simple { JsonObject() },
             idExtractor = { it.id },
             mergeConflict = { _, server -> server },
             markUploaded = { emptyList() }
@@ -456,7 +456,7 @@ class UploadCoordinatorTest {
             modelClass = Submission::class,
             endpoint = "test_endpoint",
             fetchPendingItems = { listOf(item) },
-            serializer = UploadSerializer.Simple { JsonObject() },
+            serializer = PayloadSerializer.Simple { JsonObject() },
             idExtractor = { it.id },
             markUploaded = { emptyList() }
         )
@@ -681,7 +681,7 @@ class UploadCoordinatorTest {
         endpoint = "samples",
         modelClassName = "SampleItem",
         fetchPendingItems = { items },
-        serializer = UploadSerializer.Simple { it.payload },
+        serializer = PayloadSerializer.Simple { it.payload },
         idExtractor = { it.id },
         dbIdExtractor = null,
         markUploaded = { _: List<UploadedItemResult> -> emptyList() }
@@ -691,7 +691,7 @@ class UploadCoordinatorTest {
         modelClass = Submission::class,
         endpoint = "submissions",
         fetchPendingItems = { items },
-        serializer = UploadSerializer.Simple { JsonObject().apply { addProperty("localId", it.id) } },
+        serializer = PayloadSerializer.Simple { JsonObject().apply { addProperty("localId", it.id) } },
         idExtractor = { it.id },
         dbIdExtractor = null,
         markUploaded = { emptyList() }
@@ -720,7 +720,7 @@ class UploadCoordinatorTest {
             endpoint = "overlap_endpoint",
             modelClassName = "Overlap",
             fetchPendingItems = { pending.toList() },
-            serializer = UploadSerializer.Simple { JsonObject() },
+            serializer = PayloadSerializer.Simple { JsonObject() },
             idExtractor = { it },
             markUploaded = { results ->
                 results.forEach { pending.remove(it.localId) }
@@ -756,7 +756,7 @@ class UploadCoordinatorTest {
             endpoint = endpoint,
             modelClassName = "Side",
             fetchPendingItems = { listOf("only") },
-            serializer = UploadSerializer.Simple { JsonObject() },
+            serializer = PayloadSerializer.Simple { JsonObject() },
             idExtractor = { it },
             markUploaded = { emptyList() }
         )
