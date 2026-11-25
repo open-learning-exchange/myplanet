@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.teams
 
+import android.net.Uri
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.LayoutInflater
@@ -7,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.os.BundleCompat
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -55,6 +57,8 @@ class TeamFragment : BaseBindingFragment<FragmentTeamBinding>(FragmentTeamBindin
     private lateinit var teamListAdapter: TeamsAdapter
     private var conditionApplied: Boolean = false
     private var teamToReveal: String? = null
+    private var teamDialog: AlertDialog? = null
+    private var editingTeam: TeamDetails? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -80,15 +84,23 @@ class TeamFragment : BaseBindingFragment<FragmentTeamBinding>(FragmentTeamBindin
         return view
     }
 
-    fun createTeamAlert(team: TeamDetails?) {
+    fun createTeamAlert(team: TeamDetails?, savedInput: Bundle? = null) {
         alertCreateTeamBinding = AlertCreateTeamBinding.inflate(LayoutInflater.from(context))
         setupTeamAlertUI(team)
+        savedInput?.let { restoreTeamAlertInput(it) }
+        editingTeam = team
 
         val builder = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
             .setTitle(String.format(getString(R.string.enter) + "%s " + getString(R.string.detail), if (type == null) getString(R.string.team) else type))
             .setView(alertCreateTeamBinding.root).setPositiveButton(getString(R.string.save), null).setNegativeButton(getString(R.string.cancel), null)
         val dialog = builder.create()
-        dialog.setOnDismissListener { coverPicker.unbind() }
+        dialog.setOnDismissListener {
+            coverPicker.unbind()
+            if (teamDialog === dialog) {
+                teamDialog = null
+                editingTeam = null
+            }
+        }
 
         dialog.setOnShowListener {
             val okButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
@@ -96,7 +108,54 @@ class TeamFragment : BaseBindingFragment<FragmentTeamBinding>(FragmentTeamBindin
                 handleTeamSave(team, dialog)
             }
         }
+        teamDialog = dialog
         dialog.show()
+    }
+    
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        if (teamDialog?.isShowing != true || !::alertCreateTeamBinding.isInitialized) return
+        val input = alertCreateTeamBinding
+        outState.putBundle(KEY_TEAM_DIALOG, Bundle().apply {
+            editingTeam?.let { team ->
+                putBoolean(KEY_EDITING, true)
+                putString(KEY_TEAM_ID, team._id)
+                putString(KEY_TEAM_TEAM_ID, team.teamId)
+                putString(KEY_IMAGE_NAME, team.imageName)
+                putString(KEY_REV, team.rev)
+            }
+            putString(KEY_NAME, input.etName.text.toString())
+            putString(KEY_DESCRIPTION, input.etDescription.text.toString())
+            putString(KEY_SERVICES, input.etServices.text.toString())
+            putString(KEY_RULES, input.etRules.text.toString())
+            putInt(KEY_TEAM_TYPE, input.spnTeamType.selectedItemPosition)
+            putBoolean(KEY_PUBLIC, input.switchPublic.isChecked)
+            putParcelable(KEY_COVER, coverPicker.selectedUri)
+        })
+    }
+
+    private fun restoreTeamAlert(saved: Bundle) {
+        val team = if (saved.getBoolean(KEY_EDITING)) {
+            TeamDetails(
+                _id = saved.getString(KEY_TEAM_ID), name = null, teamType = null, createdDate = null,
+                type = null, status = null, visitCount = 0, teamStatus = null, description = null,
+                services = null, rules = null, teamId = saved.getString(KEY_TEAM_TEAM_ID),
+                imageName = saved.getString(KEY_IMAGE_NAME), rev = saved.getString(KEY_REV)
+            )
+        } else {
+            null
+        }
+        createTeamAlert(team, saved)
+    }
+
+    private fun restoreTeamAlertInput(saved: Bundle) {
+        alertCreateTeamBinding.etName.setText(saved.getString(KEY_NAME))
+        alertCreateTeamBinding.etDescription.setText(saved.getString(KEY_DESCRIPTION))
+        alertCreateTeamBinding.etServices.setText(saved.getString(KEY_SERVICES))
+        alertCreateTeamBinding.etRules.setText(saved.getString(KEY_RULES))
+        alertCreateTeamBinding.spnTeamType.setSelection(saved.getInt(KEY_TEAM_TYPE))
+        alertCreateTeamBinding.switchPublic.isChecked = saved.getBoolean(KEY_PUBLIC)
+        BundleCompat.getParcelable(saved, KEY_COVER, Uri::class.java)?.let { coverPicker.restore(it) }
     }
 
     private fun setupTeamAlertUI(team: TeamDetails?) {
@@ -259,6 +318,7 @@ class TeamFragment : BaseBindingFragment<FragmentTeamBinding>(FragmentTeamBindin
             viewModel.loadTeams(fromDashboard, type, user?.id)
             setupTextWatcher()
         }
+        savedInstanceState?.getBundle(KEY_TEAM_DIALOG)?.let { restoreTeamAlert(it) }
     }
 
     private fun setupRecyclerView() {
@@ -385,7 +445,24 @@ class TeamFragment : BaseBindingFragment<FragmentTeamBinding>(FragmentTeamBindin
     }
 
     override fun onDestroyView() {
+        teamDialog?.dismiss()
         binding.rvTeamList.adapter = null
         super.onDestroyView()
+    }
+
+    private companion object {
+        const val KEY_TEAM_DIALOG = "team_dialog"
+        const val KEY_EDITING = "editing"
+        const val KEY_TEAM_ID = "team_id"
+        const val KEY_TEAM_TEAM_ID = "team_team_id"
+        const val KEY_IMAGE_NAME = "image_name"
+        const val KEY_REV = "rev"
+        const val KEY_NAME = "name"
+        const val KEY_DESCRIPTION = "description"
+        const val KEY_SERVICES = "services"
+        const val KEY_RULES = "rules"
+        const val KEY_TEAM_TYPE = "team_type"
+        const val KEY_PUBLIC = "public"
+        const val KEY_COVER = "cover"
     }
 }
