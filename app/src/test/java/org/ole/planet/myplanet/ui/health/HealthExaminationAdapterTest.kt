@@ -132,4 +132,21 @@ class HealthExaminationAdapterTest {
         assertFalse(item.isSelfExamination)
         assertEquals("Bob Smith", item.resolvedName)
     }
+
+    @Test
+    fun submitExaminations_userInMapWithoutNames_fallsBackToUsername() = runTest(testDispatcher) {
+        val mappedUser = UserEntity(id = "org.couchdb.user:sau", firstName = "", lastName = "")
+        val userMap = mapOf("org.couchdb.user:sau" to mappedUser)
+        val adapter = HealthExaminationAdapter(context, mainExamination, currentUser, userMap, dispatcherProvider)
+
+        val exam = HealthExamination().apply {
+            _id = "exam_5"
+            date = 1000L
+            data = createEncryptedDataWithCreatedBy("org.couchdb.user:sau")
+        }
+
+        adapter.submitExaminations(listOf(exam))
+
+        assertEquals("sau", adapter.currentList.single().resolvedName)
+    }
 }

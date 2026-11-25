@@ -179,6 +179,15 @@ object UrlUtils {
         return "${getUrl()}/courses/$encodedCourseId/$encodedImageName"
     }
 
+    fun getTeamImageUrl(teamId: String?, imageName: String?): String? {
+        if (teamId.isNullOrBlank() || imageName.isNullOrBlank()) {
+            return null
+        }
+        val encodedTeamId = URLEncoder.encode(teamId, "UTF-8")
+        val encodedImageName = URLEncoder.encode(imageName, "UTF-8").replace("+", "%20")
+        return "${getUrl()}/teams/$encodedTeamId/$encodedImageName"
+    }
+
     fun getUrl(): String {
         return dbUrl(spm())
     }
