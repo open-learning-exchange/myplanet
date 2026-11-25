@@ -1,26 +1,10 @@
-// CI-only init script (passed with -I by .github/scripts/gradle-ci.sh).
-//
-// Maven Central rate-limits shared GitHub runner IPs (HTTP 429), and Gradle does not
-// fall through to the next repository on a 429 — it fails the build. So the mirror goes
-// FIRST: it answers 404 for anything it lacks (Google/JitPack artifacts, or a release
-// newer than the mirror), which Gradle treats as "try the next repository", and the
-// real mavenCentral() stays listed behind it as the fallback.
-def mirrorUrl = 'https://maven-central.storage-download.googleapis.com/maven2/'
+// CI only. Gradle fails on a 429 instead of trying the next repository, so the mirror goes first;
+// it answers 404 for what it lacks and mavenCentral() stays behind it.
+def mirror = 'https://maven-central.storage-download.googleapis.com/maven2/'
+def add = { repos -> repos.maven { name = 'CiMavenCentralMirror'; url = uri(mirror) } }
 
-def addMirror = { repos ->
-    repos.maven {
-        name = 'CiMavenCentralMirror'
-        url = uri(mirrorUrl)
-    }
+gradle.beforeSettings { s ->
+    add(s.pluginManagement.repositories)
+    add(s.dependencyResolutionManagement.repositories)
 }
-
-gradle.beforeSettings { settings ->
-    // Runs before settings.gradle, so the mirror is registered ahead of its repositories.
-    addMirror(settings.pluginManagement.repositories)
-    addMirror(settings.dependencyResolutionManagement.repositories)
-}
-
-gradle.beforeProject { project ->
-    // Same for the root build.gradle.kts `buildscript { repositories { ... } }` classpath.
-    addMirror(project.buildscript.repositories)
-}
+gradle.beforeProject { p -> add(p.buildscript.repositories) }
