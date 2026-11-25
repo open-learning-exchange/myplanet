@@ -27,7 +27,9 @@ import androidx.annotation.RequiresApi
 import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SwitchCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView
 import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
@@ -562,25 +564,40 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         }
     }
 
-    fun forceSyncTrigger(): Boolean {
-        if (::lblLastSyncDate.isInitialized) {
-            if (prefData.getLastSync() <= 0) {
-                lblLastSyncDate.text = getString(R.string.last_synced_never)
-                txtSyncState?.text = getString(R.string.sync_chip_offline)
-                dotSync?.backgroundTintList = ColorStateList.valueOf(0xFFEF4444.toInt())
+    private fun updateLastSyncLabel() {
+        if (!::lblLastSyncDate.isInitialized) return
+        val lastSyncMillis = prefData.getLastSync()
+        if (lastSyncMillis <= 0) {
+            lblLastSyncDate.text = getString(R.string.last_synced_never)
+            txtSyncState?.text = getString(R.string.sync_chip_offline)
+            dotSync?.backgroundTintList = ColorStateList.valueOf(0xFFEF4444.toInt())
+        } else {
+            val relativeTime = if (timeProvider.now() - lastSyncMillis in 0 until DateUtils.MINUTE_IN_MILLIS) {
+                getString(R.string.a_few_seconds_ago)
             } else {
-                val lastSyncMillis = prefData.getLastSync()
-                val relativeTime = if (timeProvider.now() - lastSyncMillis in 0 until DateUtils.MINUTE_IN_MILLIS) {
-                    getString(R.string.a_few_seconds_ago)
-                } else {
-                    TimeUtils.getRelativeTime(this, lastSyncMillis, timeProvider)
-                }
+                TimeUtils.getRelativeTime(this, lastSyncMillis, timeProvider)
+            }
 
-                lblLastSyncDate.text = getString(R.string.last_sync, relativeTime)
-                txtSyncState?.text = getString(R.string.sync_chip_synced)
-                dotSync?.backgroundTintList = ColorStateList.valueOf(0xFF22C55E.toInt())
+            lblLastSyncDate.text = getString(R.string.last_sync, relativeTime)
+            txtSyncState?.text = getString(R.string.sync_chip_synced)
+            dotSync?.backgroundTintList = ColorStateList.valueOf(0xFF22C55E.toInt())
+        }
+    }
+
+    // The label shows a relative time ("5 minutes ago"), so refresh it while the screen is visible.
+    protected fun startLastSyncLabelTicker() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                while (true) {
+                    updateLastSyncLabel()
+                    delay(LAST_SYNC_LABEL_REFRESH_INTERVAL_MS.milliseconds)
+                }
             }
         }
+    }
+
+    fun forceSyncTrigger(): Boolean {
+        updateLastSyncLabel()
         val maxDays = ForceSyncPolicy.maxDaysForAutoSync(
             autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext),
             autoSynFeature(Constants.KEY_AUTOSYNC_WEEKLY, applicationContext),
@@ -796,6 +813,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     }
 
     companion object {
+        private const val LAST_SYNC_LABEL_REFRESH_INTERVAL_MS = 60_000L
         private const val TAG = "SyncActivity"
         private var loginNetworkJob: Job? = null
         
