@@ -100,6 +100,7 @@
                                     android:layout_height="wrap_content"
                                     android:autofillHints=""
                                     android:inputType="text"
+                                    android:maxLength="20"
                                     android:minHeight="@dimen/profile_dialog_field_min_height"
                                     android:textColor="@color/daynight_textColor"
                                     android:textSize="@dimen/profile_detail_text_size" />
@@ -165,6 +166,7 @@
                                     android:layout_height="wrap_content"
                                     android:autofillHints=""
                                     android:inputType="text"
+                                    android:maxLength="20"
                                     android:minHeight="@dimen/profile_dialog_field_min_height"
                                     android:textColor="@color/daynight_textColor"
                                     android:textSize="@dimen/profile_detail_text_size" />
