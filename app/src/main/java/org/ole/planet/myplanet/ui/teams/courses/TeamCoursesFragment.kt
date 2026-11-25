@@ -87,7 +87,6 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
                 .onSuccess {
                     if (isAdded) {
                         Utilities.toast(requireActivity(), getString(R.string.removed_from_teamcourse))
-                        updateCoursesList()
                     }
                 }
                 .onFailure { e ->
@@ -156,16 +155,13 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
     }
 
     private fun addCoursesToTeam(courses: List<MyCourse>) {
-        if (courses.isEmpty()) return
-        val courseIds = courses.mapNotNull { it.courseId }
-        if (courseIds.isEmpty()) return
+        if (courses.none { !it.courseId.isNullOrBlank() }) return
 
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.addCourses(teamId, courseIds)
+            viewModel.addCourses(teamId, courses)
                 .onSuccess {
                     if (isAdded) {
                         Utilities.toast(requireActivity(), getString(R.string.added_to_my_courses))
-                        updateCoursesList()
                     }
                 }
                 .onFailure { e ->

@@ -69,6 +69,9 @@ open class MyTeam(
 
     companion object {
         const val DEFAULT_MEMBER_LIMIT = 12
+        fun isCoverBearing(team: MyTeam): Boolean =
+            team.docType.isNullOrEmpty() && (team.type == "team" || team.type == "enterprise")
+
         fun getFirstAttachmentName(doc: JsonObject): String? {
             val attachments = doc.getAsJsonObject("_attachments") ?: return null
             return attachments.keySet().firstOrNull()
@@ -121,7 +124,11 @@ open class MyTeam(
             team.startDate = JsonUtils.getLong("startDate", kDoc)
             team.endDate = JsonUtils.getLong("endDate", kDoc)
             team.updatedDate = JsonUtils.getLong("updatedDate", kDoc)
-            getFirstAttachmentName(doc)?.let { team.imageName = it }
+            val serverImageName = JsonUtils.getString("coverFileName", kDoc).ifEmpty { null }
+                ?: getFirstAttachmentName(doc)
+            if (serverImageName != null && !(hadLocalChanges && !team.imageName.isNullOrEmpty())) {
+                team.imageName = serverImageName
+            }
             team.customVoiceLabels = (kDoc["customVoiceLabels"] as? KJsonArray)
                 ?.let(TeamVoiceLabel::parse)
 
@@ -224,6 +231,7 @@ open class MyTeam(
                 put("type", team.type)
                 put("route", team.route)
                 if (!team.icon.isNullOrEmpty()) put("icon", team.icon)
+                if (isCoverBearing(team) && !team.imageName.isNullOrEmpty()) put("coverFileName", team.imageName)
                 put("sourcePlanet", team.sourcePlanet)
                 put("services", team.services)
                 put("createdBy", team.createdBy)

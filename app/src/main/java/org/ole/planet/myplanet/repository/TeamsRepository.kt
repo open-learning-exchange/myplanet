@@ -9,6 +9,7 @@ import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamResourceDto
 import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.utils.UriAttachment
 
 data class VoicePostingPolicy(
     val teamId: String,
@@ -71,11 +72,11 @@ interface TeamsRepository : TeamsFinancesRepository, TeamsMembersRepository, Tea
     )
     suspend fun createTeamAndAddMember(request: CreateTeamRequest, user: UserEntity): Result<String>
     suspend fun updateTeam(teamId: String, name: String, description: String, services: String,
-        rules: String
+        rules: String, cover: UriAttachment? = null
     ): Result<Boolean>
     suspend fun updateTeamDetails(
         teamId: String, name: String, description: String, services: String, rules: String,
-        teamType: String, isPublic: Boolean, createdBy: String
+        teamType: String, isPublic: Boolean, createdBy: String, cover: UriAttachment? = null
     ): Boolean
     suspend fun getTeamType(teamId: String): String?
     suspend fun isTeamNameExists(name: String, type: String, excludeTeamId: String? = null): Boolean

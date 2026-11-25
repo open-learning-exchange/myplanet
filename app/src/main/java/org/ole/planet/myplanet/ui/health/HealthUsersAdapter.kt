@@ -53,7 +53,8 @@ class HealthUsersAdapter(private val clickListener: ((UserEntity) -> Unit)? = nu
         }
 
         fun bindName(user: UserEntity) {
-            binding.txtName.text = binding.root.context.getString(R.string.two_strings, user.getFullName(), "(${user.name})")
+            val fullName = user.getFullName()
+            binding.txtName.text = if (fullName.isEmpty()) user.name else binding.root.context.getString(R.string.two_strings, fullName, "(${user.name})")
         }
 
         fun bindDate(user: UserEntity) {

@@ -59,7 +59,8 @@ class UserArrayAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val user = getItem(position)
 
-        holder.binding.txtName.text = context.getString(R.string.two_strings, user.getFullName(), "(${user.name})")
+        val fullName = user.getFullName()
+        holder.binding.txtName.text = if (fullName.isEmpty()) user.name else context.getString(R.string.two_strings, fullName, "(${user.name})")
         holder.binding.txtJoined.text = context.getString(
             R.string.joined_colon,
             dateCache.getOrPut(user.joinDate) { TimeUtils.formatDate(user.joinDate) }

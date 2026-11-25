@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.base
 
 import android.graphics.Typeface
+import android.graphics.drawable.Drawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,6 +11,13 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.DataSource
+import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.bumptech.glide.load.engine.GlideException
+import com.bumptech.glide.request.RequestListener
+import com.bumptech.glide.request.target.Target
+import com.bumptech.glide.signature.ObjectKey
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
 import dagger.hilt.android.AndroidEntryPoint
@@ -36,6 +44,7 @@ import org.ole.planet.myplanet.ui.dashboard.ItemType
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.life.LifeFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
+import org.ole.planet.myplanet.ui.teams.TeamCoverImage
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.teams.TeamFragment
 import org.ole.planet.myplanet.ui.user.UserProfileFragment
@@ -228,7 +237,7 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
         userTeams = teams
         val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutTeams) ?: return
         setCountText(teams.size, MyTeam::class.java, requireView())
-        if (!flexboxLayout.isRenderedWith(teams.map { Triple(it._id, it.name, it.teamType) })) {
+        if (!flexboxLayout.isRenderedWith(teams.map { listOf(it._id, it.name, it.teamType, it.imageName, it._rev) })) {
             flexboxLayout.removeAllViews()
             if (teams.isEmpty()) {
                 renderPlaceholder(flexboxLayout, getString(R.string.no_teams_joined_yet)) {
@@ -245,6 +254,7 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
                 }
                 handleClick(ob._id, ob.name, TeamDetailFragment(), name)
                 name.text = ob.name
+                loadTeamCover(v, ob)
                 v.tag = ob._id
                 flexboxLayout.addView(v, createChipLayoutParams())
             }
@@ -259,6 +269,44 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
                 updateTeamNotifications(flexboxLayout, notificationInfoMap)
             }
         }
+    }
+
+    private fun loadTeamCover(chip: View, team: MyTeam) {
+        val (model, signature) = TeamCoverImage.model(chip.context, team._id, team.imageName, team._rev) ?: return
+        val cover = chip.findViewById<ImageView>(R.id.cover)
+        val content = chip.findViewById<View>(R.id.content)
+        val name = chip.findViewById<TextView>(R.id.tv_name)
+        val coverTitle = chip.findViewById<TextView>(R.id.coverTitle)
+        chip.clipToOutline = true
+        Glide.with(cover)
+            .load(model)
+            .diskCacheStrategy(DiskCacheStrategy.ALL)
+            .signature(ObjectKey(signature))
+            .listener(object : RequestListener<Drawable> {
+                override fun onLoadFailed(
+                    e: GlideException?,
+                    model: Any?,
+                    target: Target<Drawable>,
+                    isFirstResource: Boolean
+                ): Boolean = true
+
+                override fun onResourceReady(
+                    resource: Drawable,
+                    model: Any,
+                    target: Target<Drawable>?,
+                    dataSource: DataSource,
+                    isFirstResource: Boolean
+                ): Boolean {
+                    cover.visibility = View.VISIBLE
+                    content.visibility = View.INVISIBLE
+                    coverTitle.text = name.text
+                    coverTitle.typeface = name.typeface
+                    coverTitle.visibility = View.VISIBLE
+                    chip.setOnClickListener { name.performClick() }
+                    return false
+                }
+            })
+            .into(cover)
     }
 
     private fun updateTeamNotifications(
