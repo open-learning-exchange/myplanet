@@ -364,7 +364,6 @@ class NotificationsRepositoryImpl @Inject constructor(
             }
         }
 
-        // The viewer's own posts never count as unread, whether made here or synced from another device.
         val chatCountsById = voicesRepository.countTopLevelByTeams(notificationsById.keys.toList(), userId)
 
         val current = timeProvider.now()
