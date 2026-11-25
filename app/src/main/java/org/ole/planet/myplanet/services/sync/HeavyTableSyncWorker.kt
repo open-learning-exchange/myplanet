@@ -43,9 +43,6 @@ class HeavyTableSyncWorker @AssistedInject constructor(
     }
 
     companion object {
-        // Each table has its own worker, so WorkManager would pull all five at once; parsing and
-        // writing tens of thousands of documents in parallel starved the main thread into ANRs.
-        // One table at a time keeps the app responsive, and a failing table still frees the lock.
         private val pullLock = Mutex()
 
         const val KEY_TABLE = "table"
