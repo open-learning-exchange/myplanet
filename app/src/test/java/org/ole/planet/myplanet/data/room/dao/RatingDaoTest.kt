@@ -7,6 +7,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -82,5 +83,27 @@ class RatingDaoTest {
         assertNull(ratingDao.findById("orphan"))
         assertEquals("pending", ratingDao.findById("pending")?.id)
         assertEquals("synced", ratingDao.findById("synced")?.id)
+    }
+
+    @Test
+    fun markRetryUploaded_adoptsServerRevAndClearsPendingFlag() = runBlocking {
+        ratingDao.upsert(Rating().apply { id = "r1"; _id = "r1"; _rev = "1-old"; time = 1234; isUpdated = true })
+
+        ratingDao.markRetryUploaded("r1", "2-new", 1234)
+
+        val row = ratingDao.findById("r1")!!
+        assertEquals("2-new", row._rev)
+        assertFalse(row.isUpdated)
+    }
+
+    @Test
+    fun markRetryUploaded_keepsNewerEditPendingButTakesTheRev() = runBlocking {
+        ratingDao.upsert(Rating().apply { id = "r1"; _id = "r1"; _rev = "1-old"; time = 5678; isUpdated = true })
+
+        ratingDao.markRetryUploaded("r1", "2-new", 1234)
+
+        val row = ratingDao.findById("r1")!!
+        assertEquals("2-new", row._rev)
+        assertTrue(row.isUpdated)
     }
 }

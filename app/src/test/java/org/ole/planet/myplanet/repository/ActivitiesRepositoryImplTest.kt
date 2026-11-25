@@ -390,7 +390,8 @@ class ActivitiesRepositoryImplTest {
         coEvery {
             resourceActivityDao.getMostOpenedResource("john", UserSessionManager.KEY_RESOURCE_OPEN)
         } returns ResourceOpenCount("Res 1", 1)
-        coEvery { offlineActivityDao.getGlobalLastVisit() } returns 123456L
+        coEvery { offlineActivityDao.getGlobalLastVisit() } returns 999999L
+        coEvery { offlineActivityDao.getLastVisit("john") } returns 123456L
         coEvery { resourceActivityDao.countByUserAndType("john", UserSessionManager.KEY_RESOURCE_OPEN) } returns 3L
 
         val stats = repository.getProfileActivityStats("john")

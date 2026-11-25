@@ -19,6 +19,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.FeedbackDao
 import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.TimeProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -26,13 +27,24 @@ class FeedbackRepositoryImplTest {
 
     private lateinit var feedbackDao: FeedbackDao
     private lateinit var timeProvider: TimeProvider
+    private lateinit var sharedPrefManager: SharedPrefManager
     private lateinit var repository: FeedbackRepositoryImpl
 
     @Before
     fun setup() {
         feedbackDao = mockk(relaxed = true)
         timeProvider = mockk(relaxed = true)
-        repository = FeedbackRepositoryImpl(feedbackDao, Gson(), timeProvider)
+        sharedPrefManager = mockk(relaxed = true)
+        repository = FeedbackRepositoryImpl(feedbackDao, Gson(), timeProvider, sharedPrefManager)
+    }
+
+    @Test
+    fun createFeedback_usesConfiguredParentCode() {
+        every { sharedPrefManager.getParentCode() } returns "earth"
+
+        val feedback = repository.createFeedback("user1", "High", "Bug", "Test message", null, null)
+
+        assertEquals("earth", feedback.parentCode)
     }
 
     @Test
