@@ -5,60 +5,57 @@ import org.junit.Test
 
 class CourseSubjectClassifierTest {
 
+    private fun assertSubject(expected: CourseSubject, title: String?) =
+        assertEquals(title, expected, CourseSubjectClassifier.classify(title))
+
     @Test
-    fun classify_null_defaultsToLiteracy() {
-        assertEquals(CourseSubject.LITERACY, CourseSubjectClassifier.classify(null))
+    fun `missing title is general, not literacy`() {
+        assertSubject(CourseSubject.GENERAL, null)
+        assertSubject(CourseSubject.GENERAL, "")
+        assertSubject(CourseSubject.GENERAL, "   ")
     }
 
     @Test
-    fun classify_blank_defaultsToLiteracy() {
-        assertEquals(CourseSubject.LITERACY, CourseSubjectClassifier.classify(""))
+    fun `difficulty levels are not subjects`() {
+        listOf("Beginner", "Intermediate", "Advanced", "Expert").forEach {
+            assertSubject(CourseSubject.GENERAL, it)
+        }
     }
 
     @Test
-    fun classify_math_returnsMathematics() {
-        assertEquals(CourseSubject.MATHEMATICS, CourseSubjectClassifier.classify("Mathematics"))
-        assertEquals(CourseSubject.MATHEMATICS, CourseSubjectClassifier.classify("Basic Math Level 1"))
+    fun `titles without a clear subject are general`() {
+        assertSubject(CourseSubject.GENERAL, "Challenge course")
+        assertSubject(CourseSubject.GENERAL, "How to send survey")
+        assertSubject(CourseSubject.GENERAL, "Unit 2: The Moon")
     }
 
     @Test
-    fun classify_health_returnsHealth() {
-        assertEquals(CourseSubject.HEALTH, CourseSubjectClassifier.classify("Health & Wellness"))
+    fun `english titles`() {
+        assertSubject(CourseSubject.MATHEMATICS, "Basic Math Level 1")
+        assertSubject(CourseSubject.HEALTH, "Health & Wellness")
+        assertSubject(CourseSubject.SOCIAL_STUDIES, "Unit 3: Rural, Suburban, Urban")
+        assertSubject(CourseSubject.SOCIAL_STUDIES, "Financial Literacy 101")
+        assertSubject(CourseSubject.TECHNOLOGY, "Introduction to Prompt Engineering")
+        assertSubject(CourseSubject.TECHNOLOGY, " GitHub Issues and Pull Requests")
+        assertSubject(CourseSubject.LITERACY, "Unit 1: Fairy Tales Retold")
     }
 
     @Test
-    fun classify_social_returnsSocialStudies() {
-        assertEquals(CourseSubject.SOCIAL_STUDIES, CourseSubjectClassifier.classify("Social Studies"))
+    fun `spanish and french titles, with or without accents`() {
+        assertSubject(CourseSubject.SOCIAL_STUDIES, "Microeconomía")
+        assertSubject(CourseSubject.SOCIAL_STUDIES, "Comercialización y Ventas ")
+        assertSubject(CourseSubject.TECHNOLOGY, "Programación de computadoras")
+        assertSubject(CourseSubject.TECHNOLOGY, "Introducción a JS: dibujo y animación")
+        assertSubject(CourseSubject.MATHEMATICS, "Matemáticas básicas")
+        assertSubject(CourseSubject.HEALTH, "Santé et hygiène")
     }
 
     @Test
-    fun classify_civic_returnsSocialStudies() {
-        assertEquals(CourseSubject.SOCIAL_STUDIES, CourseSubjectClassifier.classify("Civic Education"))
-    }
-
-    @Test
-    fun classify_computer_returnsTechnology() {
-        assertEquals(CourseSubject.TECHNOLOGY, CourseSubjectClassifier.classify("Computer Science"))
-    }
-
-    @Test
-    fun classify_technology_returnsTechnology() {
-        assertEquals(CourseSubject.TECHNOLOGY, CourseSubjectClassifier.classify("Technology"))
-    }
-
-    @Test
-    fun classify_ict_returnsTechnology() {
-        assertEquals(CourseSubject.TECHNOLOGY, CourseSubjectClassifier.classify("ICT Basics"))
-    }
-
-    @Test
-    fun classify_caseInsensitive() {
-        assertEquals(CourseSubject.MATHEMATICS, CourseSubjectClassifier.classify("MATH"))
-    }
-
-    @Test
-    fun classify_unrecognizedSubject_defaultsToLiteracy() {
-        assertEquals(CourseSubject.LITERACY, CourseSubjectClassifier.classify("Literacy and Reading"))
-        assertEquals(CourseSubject.LITERACY, CourseSubjectClassifier.classify("Random Subject"))
+    fun `short abbreviations match whole words only`() {
+        assertSubject(CourseSubject.TECHNOLOGY, "TICs")
+        assertSubject(CourseSubject.TECHNOLOGY, "ICT Basics")
+        assertSubject(CourseSubject.MATHEMATICS, "Statistics for beginners")
+        assertSubject(CourseSubject.GENERAL, "Practice and ethics")
+        assertSubject(CourseSubject.GENERAL, "Rain and rivers")
     }
 }

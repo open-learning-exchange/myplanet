@@ -42,7 +42,10 @@ import org.ole.planet.myplanet.utils.toKotlinx
         Index("_rev"),
         Index("titleNormal"),
         Index("resourceId"),
-        Index("isPrivate")
+        Index("isPrivate"),
+        Index("courseId"),
+        Index("stepId"),
+        Index("resourceLocalAddress")
     ]
 )
 open class MyLibrary {
