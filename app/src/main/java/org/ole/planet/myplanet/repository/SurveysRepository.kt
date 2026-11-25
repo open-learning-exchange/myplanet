@@ -8,6 +8,7 @@ import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.SurveyFormState
 import org.ole.planet.myplanet.model.SurveyInfo
+import org.ole.planet.myplanet.model.TeamSummary
 
 interface SurveysRepository {
     suspend fun getExamQuestions(examId: String): List<ExamQuestion>
@@ -28,6 +29,7 @@ interface SurveysRepository {
     ): Map<String, SurveyFormState>
 
     suspend fun adoptSurvey(examId: String, userId: String?, teamId: String?, isTeam: Boolean)
+    suspend fun getAdoptionTargets(surveyId: String, userId: String?): List<TeamSummary>
     suspend fun getSurvey(id: String): StepExam?
     suspend fun getSurveys(ascending: Boolean = false): List<StepExam>
     suspend fun bulkInsertExamsFromSync(jsonArray: JsonArray)

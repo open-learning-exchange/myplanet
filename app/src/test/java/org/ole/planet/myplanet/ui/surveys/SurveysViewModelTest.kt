@@ -20,6 +20,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.TableDataUpdate
+import org.ole.planet.myplanet.model.TeamSummary
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.UserRepository
@@ -440,5 +442,32 @@ class SurveysViewModelTest {
         viewModel.adoptSurvey("2")
         testDispatcher.scheduler.advanceUntilIdle()
         assertEquals("Survey adopted successfully", viewModel.userMessage.value)
+    }
+
+    @Test
+    fun `requestAdoption emits the user's adoption targets`() = runTest {
+        val team = TeamSummary("team1", "Okuro team", null, null, null, "team", null, null, null, null, null)
+        coEvery { userRepository.getUserModel() } returns UserEntity(id = "user1")
+        coEvery { surveysRepository.getAdoptionTargets("s1", "user1") } returns listOf(team)
+
+        val emitted = async(testDispatcher) { viewModel.adoptionRequests.first() }
+        viewModel.requestAdoption("s1")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(SurveysViewModel.AdoptionRequest("s1", listOf(team)), emitted.await())
+    }
+
+    @Test
+    fun `adoptSurveyTo adopts into the picked team and reports its name`() = runTest {
+        val enterprise = TeamSummary("ent1", "Ent 1", null, null, null, "enterprise", null, null, null, null, null)
+        coEvery { userRepository.getUserModel() } returns UserEntity(id = "user1")
+        coEvery { surveysRepository.adoptSurvey(any(), any(), any(), any()) } returns Unit
+
+        val emitted = async(testDispatcher) { viewModel.adoptedTo.first() }
+        viewModel.adoptSurveyTo("s1", enterprise)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) { surveysRepository.adoptSurvey("s1", "user1", "ent1", true) }
+        assertEquals("Ent 1", emitted.await())
     }
 }

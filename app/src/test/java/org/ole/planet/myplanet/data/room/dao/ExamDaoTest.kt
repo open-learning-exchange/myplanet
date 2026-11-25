@@ -207,7 +207,7 @@ class ExamDaoTest {
         examDao.upsertAll(listOf(exam1, exam2, exam3, exam4, exam5))
 
         val result = examDao.getIndividualSurveys()
-        assertEquals(listOf("1", "4"), result.map { it.id })
+        assertEquals(listOf("1", "2", "4"), result.map { it.id })
     }
 
     @Test
