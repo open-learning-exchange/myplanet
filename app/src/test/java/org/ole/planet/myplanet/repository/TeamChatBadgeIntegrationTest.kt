@@ -92,21 +92,14 @@ class TeamChatBadgeIntegrationTest {
     @Test
     fun `badge clears after the feed is opened, even with replies present`() = runBlocking {
         val teamId = "teamA"
-        // One top-level post visible via the viewIn path (locally-created) ...
         val local = topLevel(viewIn = "[{\"_id\":\"$teamId\",\"section\":\"teams\"}]")
-        // ... plus a reply to it. The old chatCount counted the reply, so lastCount < chatCount
-        // forever and the badge never cleared.
         val reply = replyTo(local, viewIn = "[{\"_id\":\"$teamId\",\"section\":\"teams\"}]")
         newsDao.upsertAll(listOf(local, reply))
 
-        // Before the feed is opened there is no watermark yet → no badge.
         val before = notificationsRepository.getTeamNotifications(listOf(teamId), "user1")
         assertFalse(before[teamId]?.hasChat == true)
-
-        // Opening the feed writes the watermark = number of top-level posts shown (1).
         notificationsRepository.updateTeamNotification(teamId, voicesRepository.getFilteredNews(teamId).size)
 
-        // No new posts since → chatCount equals the watermark → badge cleared.
         val after = notificationsRepository.getTeamNotifications(listOf(teamId), "user1")
         assertFalse(after[teamId]?.hasChat == true)
     }
@@ -134,7 +127,6 @@ class TeamChatBadgeIntegrationTest {
         newsDao.upsertAll(listOf(topLevel(viewableBy = "teams", viewableId = teamId)))
         notificationsRepository.updateTeamNotification(teamId, voicesRepository.countTopLevelByTeam(teamId, viewer).toInt())
 
-        // The viewer's post made on another device arrives by sync.
         newsDao.upsertAll(listOf(topLevel(viewableBy = "teams", viewableId = teamId).apply { userId = viewer }))
         assertFalse(notificationsRepository.getTeamNotifications(listOf(teamId), viewer)[teamId]?.hasChat == true)
 
@@ -159,7 +151,7 @@ class TeamChatBadgeIntegrationTest {
         val teamId = "teamD"
         val a = topLevel(viewIn = "[{\"_id\":\"$teamId\",\"section\":\"teams\"}]")
         val b = topLevel(viewableBy = "teams", viewableId = teamId)
-        val c = replyTo(a, viewIn = "[{\"_id\":\"$teamId\",\"section\":\"teams\"}]") // reply, excluded
+        val c = replyTo(a, viewIn = "[{\"_id\":\"$teamId\",\"section\":\"teams\"}]")
         newsDao.upsertAll(listOf(a, b, c))
 
         val displayedSize = voicesRepository.getFilteredNews(teamId).size
