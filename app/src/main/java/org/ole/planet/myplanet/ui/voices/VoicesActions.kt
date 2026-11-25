@@ -10,7 +10,6 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.google.android.material.textfield.TextInputLayout
 import com.google.gson.JsonObject
@@ -48,7 +47,7 @@ object VoicesActions {
         return EditDialogComponents(binding, v, et, tlInput, llImage)
     }
 
-    private fun loadExistingImages(context: Context, news: News?, imageLayout: ViewGroup, imagesToRemove: MutableSet<String>) {
+    fun loadExistingImages(context: Context, news: News?, imageLayout: ViewGroup, imagesToRemove: MutableSet<String>) {
         imageLayout.removeAllViews()
 
         val imageUrls = news?.imageUrls
@@ -57,7 +56,7 @@ object VoicesActions {
                 try {
                     val imgObject = GsonUtils.gson.fromJson(imageUrl, JsonObject::class.java)
                     val path = GsonUtils.getString("imageUrl", imgObject)
-                    if (path.isNotEmpty()) {
+                    if (path.isNotEmpty() && path !in imagesToRemove) {
                         addImageWithRemoveIcon(context, path, imageLayout, imagesToRemove)
                     }
                 } catch (_: Exception) {
@@ -158,53 +157,6 @@ object VoicesActions {
             onSuccess(updatedNews)
         } catch (e: Exception) {
             Utilities.toast(dialog.context, "An error occurred: ${e.message}")
-        }
-    }
-
-    suspend fun showEditAlert(
-        context: Context,
-        id: String?,
-        isEdit: Boolean,
-        currentUser: UserEntity?,
-        listener: OnNewsItemClickListener?,
-        viewHolder: RecyclerView.ViewHolder,
-        repository: VoicesEditor,
-        updateReplyButton: (RecyclerView.ViewHolder, News?, Int) -> Unit = { _, _, _ -> },
-        launchAction: (suspend () -> Unit) -> Unit
-    ) {
-        val components = createEditDialogComponents(context, listener)
-        val message = components.binding.custMsg
-        message.text = context.getString(if (isEdit) R.string.edit_post else R.string.reply)
-        val icon = components.binding.alertIcon
-        icon.setImageResource(R.drawable.ic_edit)
-        val imagesToRemove = mutableSetOf<String>()
-
-        val news = id?.let { repository.getNewsById(it) }
-
-        if (isEdit) {
-            listener?.clearImages()
-            components.editText.setText(context.getString(R.string.message_placeholder, news?.message))
-            loadExistingImages(context, news, components.imageLayout, imagesToRemove)
-        }
-        val imagesBeforeDialog = listener?.getCurrentImageList()?.toList().orEmpty()
-        val dialog = AlertDialog.Builder(context, R.style.ReplyAlertDialog)
-            .setView(components.view)
-            .setPositiveButton(R.string.button_submit, null)
-            .setNegativeButton(R.string.cancel) { d, _ ->
-                listener?.restoreImages(imagesBeforeDialog)
-                d.dismiss()
-            }
-            .setOnCancelListener { listener?.restoreImages(imagesBeforeDialog) }
-            .create()
-
-        dialog.show()
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-            val currentImageList = listener?.getCurrentImageList()
-            launchAction {
-                handlePositiveButton(dialog, isEdit, components, news, repository, currentUser, currentImageList, listener, imagesToRemove) { updatedNews ->
-                    updateReplyButton(viewHolder, updatedNews ?: news, viewHolder.bindingAdapterPosition)
-                }
-            }
         }
     }
 

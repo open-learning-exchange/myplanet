@@ -595,31 +595,20 @@ class VoicesAdapter(
 
         if (canEdit(news)) {
             holder.binding.imgEdit.setOnClickListener {
-                onEditAction {
-                    VoicesActions.showEditAlert(
-                        context,
-                        news.id,
-                        true,
-                        currentUser,
-                        listener,
-                        holder,
-                        voicesEditor,
-                        { h, updatedNews, pos ->
-                            val targetNews = updatedNews ?: news
-                            preParseNews(targetNews)
-                            if (pos in 0 until itemCount) {
-                                val newList = currentList.toMutableList()
-                                newList[pos] = targetNews
-                                submitList(newList) {
-                                    safeNotifyItemChanged(pos, PAYLOAD_EDIT_ACTION)
-                                }
-                            } else {
-                                showReplyButton(h, targetNews, pos)
-                                safeNotifyItemChanged(pos, PAYLOAD_EDIT_ACTION)
-                            }
-                        },
-                        onEditAction
-                    )
+                VoicesEditDialogFragment.show(listener, news.id, isEdit = true) { updatedNews ->
+                    val targetNews = updatedNews ?: news
+                    val pos = holder.bindingAdapterPosition
+                    preParseNews(targetNews)
+                    if (pos in 0 until itemCount) {
+                        val newList = currentList.toMutableList()
+                        newList[pos] = targetNews
+                        submitList(newList) {
+                            safeNotifyItemChanged(pos, PAYLOAD_EDIT_ACTION)
+                        }
+                    } else {
+                        showReplyButton(holder, targetNews, pos)
+                        safeNotifyItemChanged(pos, PAYLOAD_EDIT_ACTION)
+                    }
                 }
             }
         } else {
@@ -801,19 +790,7 @@ class VoicesAdapter(
         if (shouldShowReplyButton()) {
             viewHolder.binding.btnReply.visibility = if (nonTeamMember) View.GONE else View.VISIBLE
             viewHolder.binding.btnReply.setOnClickListener {
-                onEditAction {
-                    VoicesActions.showEditAlert(
-                        context,
-                        finalNews?.id,
-                        false,
-                        currentUser,
-                        listener,
-                        viewHolder,
-                        voicesEditor,
-                        { _, _, _ -> },
-                        onEditAction
-                    )
-                }
+                VoicesEditDialogFragment.show(listener, finalNews?.id, isEdit = false)
             }
         } else {
             viewHolder.binding.btnReply.visibility = View.GONE
