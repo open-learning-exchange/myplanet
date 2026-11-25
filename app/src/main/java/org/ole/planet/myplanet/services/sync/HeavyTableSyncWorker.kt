@@ -15,6 +15,8 @@ import androidx.work.workDataOf
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 
@@ -32,7 +34,8 @@ class HeavyTableSyncWorker @AssistedInject constructor(
         val table = inputData.getString(KEY_TABLE) ?: return Result.failure()
         if (syncManager.isMainSyncActive()) return Result.retry()
         configurationsRepository.ensureServerUrlUpdated()
-        if (transactionSyncManager.syncDb(table, useCheckpoint = true) == TransactionSyncManager.SYNC_FAILED) {
+        val result = pullLock.withLock { transactionSyncManager.syncDb(table, useCheckpoint = true) }
+        if (result == TransactionSyncManager.SYNC_FAILED) {
             return Result.retry()
         }
         val interrupted = sharedPrefManager.rawPreferences.getInt("heavy_sync_skip_$table", 0) > 0
@@ -40,6 +43,8 @@ class HeavyTableSyncWorker @AssistedInject constructor(
     }
 
     companion object {
+        private val pullLock = Mutex()
+
         const val KEY_TABLE = "table"
         val ALL_HEAVY_TABLES = listOf(
             "ratings", "courses_progress", "submissions", "login_activities", "team_activities"

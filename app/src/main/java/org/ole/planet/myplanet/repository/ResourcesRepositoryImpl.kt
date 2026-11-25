@@ -631,7 +631,7 @@ class ResourcesRepositoryImpl @Inject constructor(
 
         val urls = withContext(dispatcherProvider.io) {
             resource.attachments?.mapNotNull { attachment ->
-                attachment.name?.let { name ->
+                attachment.name?.takeUnless(::isPackagingJunk)?.let { name ->
                     val baseDir = File(context.getExternalFilesDir(null), "ole/$resourceId")
                     val lastSlashIndex = name.lastIndexOf('/')
                     if (lastSlashIndex > 0) {
@@ -864,6 +864,8 @@ class ResourcesRepositoryImpl @Inject constructor(
         val library = myLibraryDao.getById(localId) ?: return false
         library._id = remoteId
         library._rev = remoteRev
+        
+        if (library.resourceOffline) library.downloadedRev = remoteRev
 
         val rekey = remoteId.isNotBlank() && library.id != remoteId && moveResourceFolder(localId, remoteId)
         if (rekey) {
@@ -1021,7 +1023,16 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
-    private companion object {
+    internal companion object {
         val NON_RESOURCE_DIRS = setOf("cv", "team_attachments", "course_attachments", "userimages", "personals")
+
+        private val JUNK_DIRS = setOf(".git", ".svn", ".hg", "__MACOSX")
+        private val JUNK_FILES = setOf(".DS_Store", ".gitignore", ".gitattributes", ".gitmodules")
+
+        fun isPackagingJunk(name: String): Boolean {
+            val segments = name.split('/').filter { it.isNotEmpty() }
+            return segments.dropLast(1).any { it in JUNK_DIRS } ||
+                segments.lastOrNull()?.let { it in JUNK_FILES || it in JUNK_DIRS } == true
+        }
     }
 }

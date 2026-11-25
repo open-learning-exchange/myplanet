@@ -111,14 +111,99 @@ class TeamCoursesViewModelTest {
         coVerify(exactly = 1) { teamsRepository.removeCourseFromTeam("team1", "c1") }
     }
 
+    private fun course(id: String) = MyCourse(id = id).apply { courseId = id; courseTitle = "Course $id" }
+
+    private suspend fun loadWith(vararg courses: MyCourse) {
+        val ids = courses.map { it.courseId!! }
+        coEvery { teamsRepository.getTeamCourseIds("team1") } returns ids
+        coEvery { coursesRepository.getCoursesByIds(ids) } returns courses.toList()
+        coEvery { teamsRepository.getTeamCreator("team1") } returns "user1"
+        viewModel.loadCourses("team1", "user1")
+    }
+
     @Test
     fun `addCourses delegates to teamsRepository`() = runTest(testDispatcher) {
         coEvery { teamsRepository.addCoursesToTeam("team1", listOf("c1", "c2")) } returns Result.success(Unit)
 
-        val result = viewModel.addCourses("team1", listOf("c1", "c2"))
+        val result = viewModel.addCourses("team1", listOf(course("c1"), course("c2")))
 
         assertTrue(result.isSuccess)
         coVerify(exactly = 1) { teamsRepository.addCoursesToTeam("team1", listOf("c1", "c2")) }
+    }
+
+    @Test
+    fun `addCourses shows the picked courses before the write finishes`() = runTest(testDispatcher) {
+        val existing = course("c1")
+        loadWith(existing)
+        advanceUntilIdle()
+        val added = course("c2")
+        var shownDuringWrite: List<MyCourse>? = null
+        coEvery { teamsRepository.addCoursesToTeam("team1", listOf("c2")) } coAnswers {
+            shownDuringWrite = viewModel.uiState.value?.courses
+            Result.success(Unit)
+        }
+
+        viewModel.addCourses("team1", listOf(added))
+
+        assertEquals(listOf(existing, added), shownDuringWrite)
+        assertEquals(listOf(existing, added), viewModel.uiState.value?.courses)
+        assertTrue(viewModel.uiState.value!!.canRemove)
+    }
+
+    @Test
+    fun `addCourses restores the list when the write fails`() = runTest(testDispatcher) {
+        val existing = course("c1")
+        loadWith(existing)
+        advanceUntilIdle()
+        coEvery { teamsRepository.addCoursesToTeam("team1", listOf("c2")) } returns Result.failure(IllegalStateException())
+
+        val result = viewModel.addCourses("team1", listOf(course("c2")))
+
+        assertTrue(result.isFailure)
+        assertEquals(listOf(existing), viewModel.uiState.value?.courses)
+    }
+
+    @Test
+    fun `removeCourse drops the row before the write finishes`() = runTest(testDispatcher) {
+        val kept = course("c1")
+        loadWith(kept, course("c2"))
+        advanceUntilIdle()
+        var shownDuringWrite: List<MyCourse>? = null
+        coEvery { teamsRepository.removeCourseFromTeam("team1", "c2") } coAnswers {
+            shownDuringWrite = viewModel.uiState.value?.courses
+            Result.success(Unit)
+        }
+
+        val result = viewModel.removeCourse("team1", "c2")
+
+        assertTrue(result.isSuccess)
+        assertEquals(listOf(kept), shownDuringWrite)
+        assertEquals(listOf(kept), viewModel.uiState.value?.courses)
+    }
+
+    @Test
+    fun `removeCourse restores the row when the write fails`() = runTest(testDispatcher) {
+        val courses = arrayOf(course("c1"), course("c2"))
+        loadWith(*courses)
+        advanceUntilIdle()
+        coEvery { teamsRepository.removeCourseFromTeam("team1", "c2") } returns Result.failure(IllegalStateException())
+
+        val result = viewModel.removeCourse("team1", "c2")
+
+        assertTrue(result.isFailure)
+        assertEquals(courses.toList(), viewModel.uiState.value?.courses)
+    }
+
+    @Test
+    fun `addCourses does not duplicate a course already shown`() = runTest(testDispatcher) {
+        val existing = course("c1")
+        loadWith(existing)
+        advanceUntilIdle()
+        coEvery { teamsRepository.addCoursesToTeam("team1", listOf("c1")) } returns Result.success(Unit)
+
+        viewModel.addCourses("team1", listOf(course("c1")))
+
+        assertEquals(listOf(existing), viewModel.uiState.value?.courses)
     }
 
     @Test

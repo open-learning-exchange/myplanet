@@ -23,7 +23,7 @@
     <item
         android:id="@+id/action_notifications"
         android:icon="@drawable/ic_notifications"
-        android:title="Notification"
+        android:title="@string/notifications"
         app:actionLayout="@layout/custom_notification_badge"
         app:showAsAction="always"/>
     <item

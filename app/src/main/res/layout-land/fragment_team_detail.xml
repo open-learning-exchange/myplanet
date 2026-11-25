@@ -79,16 +79,6 @@
                     android:gravity="center_vertical">
 
                     <Button
-                        android:id="@+id/btn_add_doc"
-                        style="@style/YellowButtons"
-                        android:layout_width="wrap_content"
-                        android:layout_height="32dp"
-                        android:paddingHorizontal="8dp"
-                        android:paddingVertical="0dp"
-                        android:textSize="12sp"
-                        android:layout_marginEnd="4dp"
-                        android:text="@string/add_documents" />
-                    <Button
                         android:id="@+id/btn_leave"
                         style="@style/YellowButtons"
                         android:layout_width="wrap_content"
@@ -123,4 +113,15 @@
                 android:background="@color/secondary_bg" />
         </LinearLayout>
     </LinearLayout>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_add_doc"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/padding_large"
+        android:contentDescription="@string/add_documents"
+        android:src="@drawable/ic_add_white"
+        android:visibility="gone"
+        app:tint="@color/md_white_1000" />
 </FrameLayout>
