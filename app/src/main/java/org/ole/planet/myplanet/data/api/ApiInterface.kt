@@ -63,7 +63,7 @@ interface ApiInterface {
     suspend fun isPlanetAvailable(@Url serverUrl: String?): Response<ResponseBody>
 
     @POST
-    suspend fun chatGpt(@Url url: String?, @Body requestBody: RequestBody?): Response<ChatResponse>
+    suspend fun chatGpt(@Url url: String?, @Body requestBody: RequestBody?, @Header("Authorization") authorization: String? = null): Response<ChatResponse>
 
     @GET
     suspend fun checkAiProviders(@Url url: String?): Response<ResponseBody>

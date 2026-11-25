@@ -9,8 +9,10 @@ import javax.inject.Singleton
 import kotlinx.coroutines.withContext
 import okhttp3.RequestBody
 import org.ole.planet.myplanet.model.ChatResponse
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
 
@@ -18,7 +20,8 @@ import retrofit2.Response
 class ChatApiService @Inject constructor(
     private val apiInterface: ApiInterface,
     @param:ApplicationContext private val context: Context,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val sharedPrefManager: SharedPrefManager
 ) {
     suspend fun fetchAiProviders(): Map<String, Boolean>? {
         return try {
@@ -56,6 +59,17 @@ class ChatApiService @Inject constructor(
         if (hostUrl.isBlank()) {
             throw IllegalArgumentException("Host URL is not available")
         }
-        return apiInterface.chatGpt(hostUrl, content)
+        return apiInterface.chatGpt(hostUrl, content, userAuthHeader())
+    }
+    
+    private suspend fun userAuthHeader(): String? = withContext(dispatcherProvider.io) {
+        val prefs = sharedPrefManager.rawPreferences
+        val name = SecurePrefs.getUserName(context, prefs)
+        val password = SecurePrefs.getPassword(context, prefs)
+        if (name.isNullOrEmpty() || password.isNullOrEmpty() || name != sharedPrefManager.getUserName()) {
+            null
+        } else {
+            UrlUtils.basicAuthHeader(name, password)
+        }
     }
 }
