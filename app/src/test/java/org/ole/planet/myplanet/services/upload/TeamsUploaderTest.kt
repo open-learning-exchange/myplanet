@@ -12,6 +12,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
+import io.mockk.slot
 import io.mockk.unmockkAll
 import io.mockk.unmockkObject
 import java.io.File
@@ -22,6 +23,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -221,5 +223,61 @@ class TeamsUploaderTest {
         coVerify(exactly = 1) { mockRepo.markTeamsUploaded(mapOf("team1" to "rev1")) }
 
         unmockkObject(MyTeam)
+    }
+
+    @Test
+    fun `server-only cover is kept with an attachment stub`() = runTest(testDispatcher) {
+        val serialized = JsonObject().apply { addProperty("_id", "team1"); addProperty("_rev", "1-a") }
+        val team = TeamUploadData("team1", serialized, false, "cover.webp")
+        val mockRepo = mockk<TeamsSyncRepository>(relaxed = true)
+        every { teamsSyncRepository.get() } returns mockRepo
+        coEvery { mockRepo.getTeamsForUpload() } returns listOf(team)
+
+        mockkObject(MyTeam)
+        val missingFile = mockk<File>()
+        every { MyTeam.getAttachmentFile(context, "team1", "cover.webp") } returns missingFile
+        every { missingFile.exists() } returns false
+
+        val body = slot<JsonObject>()
+        coEvery { uploadRepository.postUploadArray(any(), capture(body)) } returns Response.success(JsonArray())
+
+        teamsUploader.uploadTeams()
+        advanceUntilIdle()
+        unmockkObject(MyTeam)
+
+        val doc = body.captured.getAsJsonArray("docs")[0].asJsonObject
+        assertTrue(doc.getAsJsonObject("_attachments").getAsJsonObject("cover.webp").get("stub").asBoolean)
+        assertFalse("stub must not leak into the stored payload", serialized.has("_attachments"))
+        coVerify(exactly = 0) { uploadRepository.uploadResource(any(), any(), any()) }
+    }
+
+    @Test
+    fun `locally picked cover is re-uploaded instead of stubbed`() = runTest(testDispatcher) {
+        val serialized = JsonObject().apply { addProperty("_id", "team1"); addProperty("_rev", "1-a") }
+        val team = TeamUploadData("team1", serialized, false, "cover.webp")
+        val mockRepo = mockk<TeamsSyncRepository>(relaxed = true)
+        every { teamsSyncRepository.get() } returns mockRepo
+        coEvery { mockRepo.getTeamsForUpload() } returns listOf(team)
+
+        mockkObject(MyTeam)
+        val localFile = File.createTempFile("cover", ".webp").apply { deleteOnExit() }
+        every { MyTeam.getAttachmentFile(context, "team1", "cover.webp") } returns localFile
+
+        val body = slot<JsonObject>()
+        val bulkResponse = JsonArray().apply {
+            add(JsonObject().apply { addProperty("id", "team1"); addProperty("rev", "2-b") })
+        }
+        coEvery { uploadRepository.postUploadArray(any(), capture(body)) } returns Response.success(bulkResponse)
+        coEvery { uploadRepository.uploadResource(any(), any(), any()) } returns
+            Response.success(JsonObject().apply { addProperty("rev", "3-c") })
+
+        teamsUploader.uploadTeams()
+        advanceUntilIdle()
+        unmockkObject(MyTeam)
+
+        val doc = body.captured.getAsJsonArray("docs")[0].asJsonObject
+        assertFalse(doc.has("_attachments"))
+        coVerify(exactly = 1) { uploadRepository.uploadResource(any(), "http://mock.url/teams/team1/cover.webp", any()) }
+        coVerify(exactly = 1) { mockRepo.markTeamsUploaded(mapOf("team1" to "3-c")) }
     }
 }

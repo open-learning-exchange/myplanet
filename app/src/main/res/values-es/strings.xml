@@ -1429,4 +1429,7 @@
 
     <string name="playback_speed">Velocidad de reproducción</string>
     <string name="playback_speed_format">%1$sx</string>
+    <string name="add_cover_image">Añadir imagen de portada</string>
+    <string name="change_cover_image">Cambiar imagen de portada</string>
+    <string name="team_cover_image">Imagen de portada del equipo</string>
 </resources>

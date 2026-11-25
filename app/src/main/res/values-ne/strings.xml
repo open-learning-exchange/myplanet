@@ -1426,4 +1426,7 @@
 
     <string name="playback_speed">प्लेब्याक गति</string>
     <string name="playback_speed_format">%1$sx</string>
+    <string name="add_cover_image">कभर तस्बिर थप्नुहोस्</string>
+    <string name="change_cover_image">कभर तस्बिर परिवर्तन गर्नुहोस्</string>
+    <string name="team_cover_image">टोलीको कभर तस्बिर</string>
 </resources>

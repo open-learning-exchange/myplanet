@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.UriAttachment
 
 sealed class TeamActionResult {
     object Success : TeamActionResult()
@@ -263,7 +264,8 @@ class TeamViewModel @Inject constructor(
         teamType: String,
         isPublic: Boolean,
         category: String?,
-        userModel: UserEntity
+        userModel: UserEntity,
+        cover: UriAttachment? = null
     ): TeamActionResult = teamSaveMutex.withLock {
         val teamTypeForValidation = if (category == "enterprise") "enterprise" else "team"
         if (teamsRepository.isTeamNameExists(name, teamTypeForValidation, null)) {
@@ -277,7 +279,8 @@ class TeamViewModel @Inject constructor(
             rules = rules,
             teamType = teamType,
             isPublic = isPublic,
-            category = category
+            category = category,
+            cover = cover
         )
 
         teamsRepository.createTeamAndAddMember(request, userModel)
@@ -293,7 +296,8 @@ class TeamViewModel @Inject constructor(
         description: String,
         services: String,
         rules: String,
-        category: String?
+        category: String?,
+        cover: UriAttachment? = null
     ): TeamActionResult = teamSaveMutex.withLock {
         val teamTypeForValidation = if (category == "enterprise") "enterprise" else "team"
         if (teamsRepository.isTeamNameExists(name, teamTypeForValidation, teamId)) {
@@ -306,6 +310,7 @@ class TeamViewModel @Inject constructor(
             description = description,
             services = services,
             rules = rules,
+            cover = cover,
         ).fold(
             onSuccess = { updated ->
                 if (updated) {
