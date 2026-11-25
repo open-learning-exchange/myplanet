@@ -554,6 +554,40 @@ class CoursesRepositoryImplTest {
         io.mockk.unmockkStatic("androidx.room.RoomDatabaseKt")
     }
 
+    @Test
+    fun `bulkInsertFromSync keeps stored survey dates when the embedded step copy has none`() = runTest {
+        io.mockk.mockkStatic("androidx.room.RoomDatabaseKt")
+        val transactionBlock = io.mockk.slot<suspend () -> Any?>()
+        coEvery { appDatabase.withTransaction(capture(transactionBlock)) } coAnswers {
+            transactionBlock.captured.invoke()
+        }
+
+        val syncData = JsonParser.parseString(
+            """
+            [{"id": "course_103", "doc": {"_id": "course_103", "courseTitle": "Dated", "steps": [
+                {"stepTitle": "Step 1", "survey": {"_id": "survey_1", "name": "Step survey", "type": "surveys"}},
+                {"stepTitle": "Step 2", "survey": {"_id": "survey_2", "name": "Fresh survey", "type": "surveys", "createdDate": 2000}}
+            ]}}]
+            """.trimIndent()
+        ).asJsonArray
+
+        coEvery { examDao.getByIds(any()) } returns listOf(
+            StepExam(id = "survey_1", createdDate = 1000L, updatedDate = 1500L),
+            StepExam(id = "survey_2", createdDate = 900L)
+        )
+        val capturedExams = slot<List<StepExam>>()
+        coEvery { examDao.upsertAll(capture(capturedExams)) } returns Unit
+
+        repository.bulkInsertFromSync(syncData)
+
+        val byId = capturedExams.captured.associateBy { it.id }
+        assertEquals(1000L, byId.getValue("survey_1").createdDate)
+        assertEquals(1500L, byId.getValue("survey_1").updatedDate)
+        assertEquals(2000L, byId.getValue("survey_2").createdDate)
+
+        io.mockk.unmockkStatic("androidx.room.RoomDatabaseKt")
+    }
+
     @Test(expected = kotlinx.coroutines.CancellationException::class)
     fun `flushPendingCourseResources rethrows CancellationException and abandons loop`() = runTest {
         val jsonArray = com.google.gson.JsonArray().apply {

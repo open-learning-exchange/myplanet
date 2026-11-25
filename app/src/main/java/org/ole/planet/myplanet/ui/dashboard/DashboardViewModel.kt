@@ -78,8 +78,9 @@ data class GuestVisitState(
         }
     val shouldShowTrialEndedDialog: Boolean
         get() = isGuest && offlineVisits >= 4
+    
     val shouldAutoOpenDrawer: Boolean
-        get() = !(isGuest && offlineVisits >= 3)
+        get() = isGuest && offlineVisits < 3
 }
 
 @HiltViewModel

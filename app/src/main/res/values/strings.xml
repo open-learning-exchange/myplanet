@@ -1161,6 +1161,9 @@
     <string name="no_reports">No reports available</string>
     <string name="fetching_ai_providers">Fetching AI providers…</string>
     <string name="adopt_survey">Adopt survey</string>
+    <string name="adopt_survey_to">Adopt survey to…</string>
+    <string name="survey_adopted_to">Survey adopted to %1$s</string>
+    <string name="no_survey_adoption_targets">Join a team or enterprise to adopt this survey</string>
     <string name="survey_adopted_successfully">Survey adopted successfully!</string>
     <string name="user_verification_in_progress">User verification in progress. Please wait while we process the data.</string>
     <string name="go_to_mylibrary">Go To MyLibrary</string>
@@ -1449,4 +1452,7 @@
 
     <string name="playback_speed">Playback Speed</string>
     <string name="playback_speed_format">%1$sx</string>
+    <string name="add_cover_image">Add Cover Image</string>
+    <string name="change_cover_image">Change Cover Image</string>
+    <string name="team_cover_image">Team cover image</string>
 </resources>
