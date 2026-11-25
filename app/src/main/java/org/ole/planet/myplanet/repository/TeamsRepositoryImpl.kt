@@ -55,6 +55,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.UriAttachment
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.toSyncDocuments
@@ -186,6 +187,7 @@ class TeamsRepositoryImpl @Inject constructor(
                 limit = MyTeam.DEFAULT_MEMBER_LIMIT
                 updated = true
             }
+            writeCover(teamId, request.cover)?.let { team.imageName = it }
             val membership = MyTeam().apply {
                 _id = AndroidDecrypter.generateIv()
                 userId = user._id
@@ -268,6 +270,8 @@ class TeamsRepositoryImpl @Inject constructor(
                 description = team.description,
                 services = team.services,
                 rules = team.rules,
+                imageName = team.imageName,
+                rev = team._rev,
                 teamId = team.teamId
             )
         }.sortedWith(
@@ -523,13 +527,25 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun attachTeamImage(teamId: String, imageName: String, imageData: ByteArray) {
-        if (teamId.isBlank()) return
-        val destFile = MyTeam.getAttachmentFile(MainApplication.context, teamId, imageName) ?: return
+    private suspend fun writeCover(teamId: String, cover: UriAttachment?): String? {
+        val name = cover?.name?.takeIf { it.isNotBlank() } ?: return null
+        val bytes = cover.bytes ?: return null
+        if (!writeTeamAttachment(teamId, name, bytes)) return null
+        return name
+    }
+
+    private suspend fun writeTeamAttachment(teamId: String, imageName: String, imageData: ByteArray): Boolean {
+        if (teamId.isBlank()) return false
+        val destFile = MyTeam.getAttachmentFile(MainApplication.context, teamId, imageName) ?: return false
         withContext(dispatcherProvider.io) {
             destFile.parentFile?.mkdirs()
             destFile.writeBytes(imageData)
         }
+        return true
+    }
+
+    private suspend fun attachTeamImage(teamId: String, imageName: String, imageData: ByteArray) {
+        if (!writeTeamAttachment(teamId, imageName, imageData)) return
         updateTeamEntityById(teamId) { team ->
             team.imageName = imageName
             team.updated = true
@@ -876,9 +892,11 @@ class TeamsRepositoryImpl @Inject constructor(
         description: String,
         services: String,
         rules: String,
+        cover: UriAttachment?,
     ): Result<Boolean> {
         return runCatching {
             val team = getTeamEntityByAnyId(teamId) ?: return@runCatching false
+            writeCover(team._id, cover)?.let { team.imageName = it }
             team.name = name
             team.services = services
             team.rules = rules
@@ -898,9 +916,11 @@ class TeamsRepositoryImpl @Inject constructor(
         teamType: String,
         isPublic: Boolean,
         createdBy: String,
+        cover: UriAttachment?,
     ): Boolean {
         if (teamId.isBlank()) return false
         val team = getTeamEntityByAnyId(teamId) ?: return false
+        writeCover(team._id, cover)?.let { team.imageName = it }
         team.name = name
         team.description = description
         team.services = services

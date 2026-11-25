@@ -420,4 +420,58 @@ class DownloadServiceTest {
             unmockkStatic(NotificationManagerCompat::class)
         }
     }
+
+    private fun failingService(broadcast: BroadcastService): DownloadService {
+        val service = spyk(DownloadService())
+        fun set(name: String, value: Any?) {
+            DownloadService::class.java.getDeclaredField(name).apply { isAccessible = true }.set(service, value)
+        }
+        set("broadcastService", broadcast)
+        set("appScope", CoroutineScope(SupervisorJob() + Dispatchers.Unconfined))
+        set("notificationBuilder", null)
+        return service
+    }
+
+    private fun invokeDownloadFailed(service: DownloadService, message: String, fromSync: Boolean, code: Int?) {
+        DownloadService::class.java.getDeclaredMethod(
+            "downloadFailed", String::class.java, Boolean::class.javaPrimitiveType, Int::class.javaObjectType
+        ).apply { isAccessible = true }.invoke(service, message, fromSync, code)
+    }
+
+    private fun sentActions(broadcast: BroadcastService): List<String?> {
+        val intents = mutableListOf<Intent>()
+        io.mockk.coVerify(atLeast = 0) { broadcast.sendBroadcast(capture(intents)) }
+        return intents.map { it.action }
+    }
+
+    @Test
+    fun `a 404 from the server shows the resource not found dialog`() {
+        val broadcast = mockk<BroadcastService>(relaxed = true)
+        val service = failingService(broadcast)
+
+        invokeDownloadFailed(service, "File not found", fromSync = false, code = 404)
+
+        assertTrue(sentActions(broadcast).contains(DownloadService.RESOURCE_NOT_FOUND_ACTION))
+    }
+
+    @Test
+    fun `other download failures do not show the resource not found dialog`() {
+        val broadcast = mockk<BroadcastService>(relaxed = true)
+        val service = failingService(broadcast)
+
+        invokeDownloadFailed(service, "Server error", fromSync = false, code = 500)
+        invokeDownloadFailed(service, "Write failed", fromSync = false, code = null)
+
+        assertFalse(sentActions(broadcast).contains(DownloadService.RESOURCE_NOT_FOUND_ACTION))
+    }
+
+    @Test
+    fun `a 404 during sync does not show the resource not found dialog`() {
+        val broadcast = mockk<BroadcastService>(relaxed = true)
+        val service = failingService(broadcast)
+
+        invokeDownloadFailed(service, "File not found", fromSync = true, code = 404)
+
+        assertFalse(sentActions(broadcast).contains(DownloadService.RESOURCE_NOT_FOUND_ACTION))
+    }
 }

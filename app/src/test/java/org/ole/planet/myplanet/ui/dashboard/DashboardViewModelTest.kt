@@ -287,7 +287,7 @@ class DashboardViewModelTest {
         assertEquals(false, state.isGuest)
         assertEquals(null, state.bannerMessageRes)
         assertEquals(false, state.shouldShowTrialEndedDialog)
-        assertEquals(true, state.shouldAutoOpenDrawer)
+        assertEquals(false, state.shouldAutoOpenDrawer)
         coVerify(exactly = 0) { activitiesRepository.getOfflineVisitCount(any()) }
     }
 
@@ -302,6 +302,7 @@ class DashboardViewModelTest {
 
         assertEquals(true, GuestVisitState(offlineVisits = 2, isGuest = true).shouldAutoOpenDrawer)
         assertEquals(false, GuestVisitState(offlineVisits = 3, isGuest = true).shouldAutoOpenDrawer)
-        assertEquals(true, GuestVisitState(offlineVisits = 10, isGuest = false).shouldAutoOpenDrawer)
+        assertEquals(false, GuestVisitState(offlineVisits = 0, isGuest = false).shouldAutoOpenDrawer)
+        assertEquals(false, GuestVisitState(offlineVisits = 10, isGuest = false).shouldAutoOpenDrawer)
     }
 }
