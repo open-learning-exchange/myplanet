@@ -221,7 +221,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
 
     override suspend fun getProfileActivityStats(userName: String): ProfileActivityStats = coroutineScope {
         val mostOpenedDeferred = async { getMostOpenedResource(userName) }
-        val lastVisitDeferred = async { getGlobalLastVisit() }
+        val lastVisitDeferred = async { getLastVisit(userName) }
         val countDeferred = async { getResourceOpenCount(userName) }
 
         ProfileActivityStats(
