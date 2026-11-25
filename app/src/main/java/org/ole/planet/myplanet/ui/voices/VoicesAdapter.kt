@@ -24,6 +24,14 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.google.gson.JsonObject
 import io.noties.markwon.image.AsyncDrawableScheduler
 import java.io.File
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnChatItemClickListener
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
@@ -65,7 +73,8 @@ class VoicesAdapter(
     private val onAnimateTyping: (String, (String) -> Unit, () -> Unit) -> (() -> Unit),
     private val labelManager: VoicesLabelManager,
     private val voicesEditor: VoicesEditor,
-    private val leadersList: List<UserEntity>
+    private val leadersList: List<UserEntity>,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ListAdapter<News, RecyclerView.ViewHolder>(
     DiffUtils.itemCallback<News>(
         areItemsTheSame = { oldItem, newItem ->
@@ -202,6 +211,10 @@ class VoicesAdapter(
     private val replyCountCache = mutableMapOf<String, Int>()
     private val userIdPositions = mutableMapOf<String, MutableList<Int>>()
     private var _isTeamLeader: Boolean? = null
+    private val imageOnDisk = mutableMapOf<String, Boolean>()
+    private val pendingImageChecks = linkedSetOf<String>()
+    private var imageCheckScope: CoroutineScope? = null
+    private var imageCheckJob: Job? = null
 
     init {
         fetchTeamLeaderStatus()
@@ -407,6 +420,7 @@ class VoicesAdapter(
 
     fun onResourceDownloaded(resourceId: String) {
         if (resourceId.isEmpty()) return
+        imageOnDisk.keys.removeAll { it.substringBefore('/') == resourceId }
         currentList.forEachIndexed { index, news ->
             val referenced = news.images?.contains(resourceId) == true ||
                 news.message?.contains("resources/$resourceId/") == true
@@ -491,7 +505,7 @@ class VoicesAdapter(
             news.message,
             VoicesAdapterHelper.attachedResourceIds(news.imagesArray)
         )
-        val message = VoicesAdapterHelper.stripUnavailableImages(withoutAttachments, ::isImageOnDisk)
+        val message = VoicesAdapterHelper.stripUnavailableImages(withoutAttachments, ::isImageAvailable)
         val markdownContentWithLocalPaths = prependBaseUrlToImages(
             message,
             "file://$externalFilesDir/ole/",
@@ -511,6 +525,36 @@ class VoicesAdapter(
                 "${formatDate(news.time)} | Shared from $sharedTeamName"
             }
         holder.binding.tvEdited.visibility = if (news.isEdited) View.VISIBLE else View.GONE
+    }
+
+    private fun isImageAvailable(resourcePath: String): Boolean {
+        imageOnDisk[resourcePath]?.let { return it }
+        if (pendingImageChecks.add(resourcePath)) scheduleImageChecks()
+        return false
+    }
+
+    private fun scheduleImageChecks() {
+        if (imageCheckJob?.isActive == true) return
+        val scope = imageCheckScope ?: return
+        imageCheckJob = scope.launch {
+            while (pendingImageChecks.isNotEmpty()) {
+                val batch = pendingImageChecks.toList()
+                val results = withContext(ioDispatcher) { batch.associateWith(::isImageOnDisk) }
+                pendingImageChecks.removeAll(batch.toSet())
+                imageOnDisk.putAll(results)
+                val found = results.filterValues { it }.keys
+                if (found.isNotEmpty()) notifyRowsReferencingImages(found)
+            }
+        }
+    }
+
+    private fun notifyRowsReferencingImages(paths: Set<String>) {
+        currentList.forEachIndexed { index, news ->
+            val message = news.message ?: return@forEachIndexed
+            if (paths.any { message.contains("resources/$it") }) {
+                safeNotifyItemChanged(index, PAYLOAD_RESOURCE_DOWNLOADED)
+            }
+        }
     }
 
     private fun isImageOnDisk(resourcePath: String): Boolean {
@@ -950,9 +994,6 @@ class VoicesAdapter(
         }
     }
 
-    // Notifying the adapter while the RecyclerView is laying out/scrolling throws
-    // IllegalStateException. Async callbacks (user fetch, edit, etc.) can resolve
-    // synchronously during onBindViewHolder, so defer the notify to the RV handler.
     private fun safeNotifyItemChanged(position: Int, payload: Any) {
         if (position < 0) return
         val rv = recyclerView
@@ -968,11 +1009,16 @@ class VoicesAdapter(
     override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
         super.onAttachedToRecyclerView(recyclerView)
         this.recyclerView = recyclerView
+        imageCheckScope = MainScope()
     }
 
     override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
         super.onDetachedFromRecyclerView(recyclerView)
         this.recyclerView = null
+        imageCheckScope?.cancel()
+        imageCheckScope = null
+        imageCheckJob = null
+        pendingImageChecks.clear()
         userCache.clear()
         fetchingUserIds.clear()
     }
@@ -1028,13 +1074,13 @@ class VoicesAdapter(
                 if (size == 1) {
                     val ob = imagesArray[0]?.asJsonObject
                     val resourceId = GsonUtils.getString("resourceId", ob)
-                    loadLibraryImage(binding, resourceId, imageBindToken)
+                    loadLibraryImage(binding, resourceId, GsonUtils.getString("filename", ob), imageBindToken)
                 } else {
                     binding.llNewsImages.visibility = View.VISIBLE
                     for (i in 0 until size) {
                         val ob = imagesArray[i]?.asJsonObject
                         val resourceId = GsonUtils.getString("resourceId", ob)
-                        addLibraryImageToContainer(binding, resourceId, imageBindToken)
+                        addLibraryImageToContainer(binding, resourceId, GsonUtils.getString("filename", ob), imageBindToken)
                     }
                 }
             }
@@ -1090,13 +1136,20 @@ class VoicesAdapter(
         binding.llNewsImages.addView(imageView)
     }
 
-    private fun loadLibraryImage(binding: RowNewsBinding, resourceId: String?, imageBindToken: Any) {
+    private fun libraryImageFile(library: MyLibrary?, resourceId: String, filename: String): File? {
+        val basePath = externalFilesDir ?: return null
+        if (library != null) return File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
+        if (filename.isEmpty()) return null
+        val path = "$resourceId/$filename"
+        return if (isImageAvailable(path)) File(basePath, "ole/$path") else null
+    }
+
+    private fun loadLibraryImage(binding: RowNewsBinding, resourceId: String?, filename: String, imageBindToken: Any) {
         if (resourceId == null) return
         getLibraryResourceFn(resourceId) { library ->
             if (binding.llNewsImages.tag !== imageBindToken) return@getLibraryResourceFn
-            val basePath = externalFilesDir
-            if (library != null && basePath != null) {
-                val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
+            val imageFile = libraryImageFile(library, resourceId, filename)
+            if (imageFile != null) {
                 val size = thumbnailSize120
                 loadGlideImage(imageFile, binding.imgNews, size)
                 binding.imgNews.visibility = View.VISIBLE
@@ -1107,13 +1160,12 @@ class VoicesAdapter(
         }
     }
 
-    private fun addLibraryImageToContainer(binding: RowNewsBinding, resourceId: String?, imageBindToken: Any) {
+    private fun addLibraryImageToContainer(binding: RowNewsBinding, resourceId: String?, filename: String, imageBindToken: Any) {
         if (resourceId == null) return
         getLibraryResourceFn(resourceId) { library ->
             if (binding.llNewsImages.tag !== imageBindToken) return@getLibraryResourceFn
-            val basePath = externalFilesDir
-            if (library != null && basePath != null) {
-                val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
+            val imageFile = libraryImageFile(library, resourceId, filename)
+            if (imageFile != null) {
                 val imageView = ImageView(context)
                 val size = thumbnailSize100
                 val margin = thumbnailMarginPx
