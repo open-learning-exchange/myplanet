@@ -152,6 +152,21 @@ class SyncManagerTest {
     }
 
     @Test
+    fun `a successful sync notifies the listener that it completed`() = runTest {
+        coEvery { transactionSyncManager.authenticate() } returns true
+        coEvery { transactionSyncManager.syncDb(any(), any()) } returns 0
+        mockkObject(HeavyTableSyncWorker.Companion)
+        every { HeavyTableSyncWorker.schedule(any(), any()) } just Runs
+
+        syncManager.start(listener, "sync", listOf())
+
+        verify(exactly = 1) { listener.onSyncComplete() }
+        verify(exactly = 0) { listener.onSyncFailed(any()) }
+        verify { sharedPrefManager.setLastSync(any()) }
+        assertEquals(SyncManager.SyncStatus.Success("Sync completed"), syncManager.syncStatus.value)
+    }
+
+    @Test
     fun `a failed table pull is retried once and does not fail the sync when the retry succeeds`() = runTest {
         coEvery { transactionSyncManager.authenticate() } returns true
         coEvery { transactionSyncManager.syncDb(any(), any()) } returns 0
