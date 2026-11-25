@@ -11,17 +11,13 @@ import org.ole.planet.myplanet.utils.AttachmentReader
 import org.ole.planet.myplanet.utils.UriAttachment
 
 class TeamCoverPicker(fragment: Fragment) {
-    private var selectedUri: Uri? = null
+    var selectedUri: Uri? = null
+        private set
     private var binding: AlertCreateTeamBinding? = null
 
     private val launcher = fragment.registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri == null) return@registerForActivityResult
-        selectedUri = uri
-        binding?.let { b ->
-            b.ivTeamCover.isVisible = true
-            Glide.with(b.ivTeamCover).load(uri).into(b.ivTeamCover)
-            b.btnTeamCover.setText(R.string.change_cover_image)
-        }
+        restore(uri)
     }
 
     fun bind(binding: AlertCreateTeamBinding, teamId: String?, imageName: String?, rev: String?) {
@@ -32,6 +28,15 @@ class TeamCoverPicker(fragment: Fragment) {
             if (imageName.isNullOrBlank()) R.string.add_cover_image else R.string.change_cover_image
         )
         binding.btnTeamCover.setOnClickListener { launcher.launch("image/*") }
+    }
+
+    fun restore(uri: Uri) {
+        selectedUri = uri
+        binding?.let { b ->
+            b.ivTeamCover.isVisible = true
+            Glide.with(b.ivTeamCover).load(uri).into(b.ivTeamCover)
+            b.btnTeamCover.setText(R.string.change_cover_image)
+        }
     }
 
     suspend fun read(reader: AttachmentReader): UriAttachment? {
