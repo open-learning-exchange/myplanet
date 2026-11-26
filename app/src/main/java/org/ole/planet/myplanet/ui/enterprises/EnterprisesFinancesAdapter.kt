@@ -50,7 +50,7 @@ class EnterprisesFinancesAdapter(
     override fun onBindViewHolder(holder: FinanceViewHolder, position: Int) {
         val item = getItem(position)
         val binding = holder.binding
-        binding.date.text = item.date?.let { formatDate(it, "MMM dd, yyyy") } ?: ""
+        binding.date.text = item.date?.let { formatDate(it) } ?: ""
         binding.note.text = item.description
         if (item.type.equals("debit", ignoreCase = true)) {
             binding.debit.text = AmountUtils.format(item.amount)

@@ -9,14 +9,13 @@ import java.time.LocalDateTime
 import java.time.Period
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import org.ole.planet.myplanet.R
 
 object TimeUtils {
     private const val TAG = "TimeUtils"
-    const val DATE_FORMAT = "dd MMM yyyy"
-    private const val DEFAULT_DATE_PATTERN = "EEEE, MMM dd, yyyy"
 
     private val defaultLocale: Locale
         get() = Locale.getDefault()
@@ -47,17 +46,26 @@ object TimeUtils {
         }
     }
     
-    private fun defaultDateFormatter() = formatterFor(DEFAULT_DATE_PATTERN, ZoneId.systemDefault())
+    private data class DisplayKey(val withTime: Boolean, val zone: ZoneId, val locale: Locale)
 
-    private fun utcDateFormatter() = formatterFor(DEFAULT_DATE_PATTERN, utcZone)
+    private val displayFormatters = ConcurrentHashMap<DisplayKey, DateTimeFormatter>()
 
-    private fun dateTimeFormatter() =
-        formatterFor("EEE dd, MMMM yyyy, hh:mm a", ZoneId.systemDefault())
+    private fun displayFormatter(zone: ZoneId = ZoneId.systemDefault(), withTime: Boolean = false): DateTimeFormatter {
+        val locale = defaultLocale
+        return displayFormatters.getOrPut(DisplayKey(withTime, zone, locale)) {
+            val base = if (withTime) {
+                DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
+            } else {
+                DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+            }
+            base.withLocale(locale).withZone(zone)
+        }
+    }
 
     private fun tzFormatter() =
         formatterFor("yyyy-MM-dd HH:mm:ss", ZoneId.systemDefault(), locale = null)
 
-    private fun dateOnlyFormatter() =
+    private fun legacyDateFormatter() =
         formatterFor("EEE dd, MMMM yyyy", ZoneId.systemDefault())
 
     private fun fallbackDateFormatter() =
@@ -87,14 +95,14 @@ object TimeUtils {
 
     fun getFormattedDate(date: Long?): String {
         val instant = date?.let { Instant.ofEpochMilli(it) } ?: Instant.now()
-        return formatInstant(instant, "N/A") { defaultDateFormatter() }
+        return formatInstant(instant, "N/A") { displayFormatter() }
     }
 
     fun getFormattedShortDate(date: Long): String =
-        formatInstant(Instant.ofEpochMilli(date), "N/A") { formatterFor(DATE_FORMAT, ZoneId.systemDefault()) }
+        formatInstant(Instant.ofEpochMilli(date), "N/A") { displayFormatter() }
 
     fun getFormattedDateWithTime(date: Long): String =
-        formatInstant(Instant.ofEpochMilli(date), "N/A") { dateTimeFormatter() }
+        formatInstant(Instant.ofEpochMilli(date), "N/A") { displayFormatter(withTime = true) }
 
     fun formatDateTZ(data: Long): String =
         formatInstant(Instant.ofEpochMilli(data), "") { tzFormatter() }
@@ -111,7 +119,7 @@ object TimeUtils {
                     LocalDateTime
                         .parse(cleaned, formatterFor("yyyy-MM-dd HH:mm:ss", locale = null))
                         .toLocalDate()
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     LocalDate.parse(cleaned, formatterFor("yyyy-MM-dd", locale = null))
                 }
             val today = LocalDate.now()
@@ -135,7 +143,7 @@ object TimeUtils {
                 val dateOnlyFormatter = formatterFor("yyyy-MM-dd")
                 LocalDate.parse(stringDate, dateOnlyFormatter).atStartOfDay(utcZone).toInstant()
             }
-            formatInstant(instant, "N/A") { utcDateFormatter() }
+            formatInstant(instant, "N/A") { displayFormatter(utcZone) }
         } catch (e: Exception) {
             Log.w(TAG, "getFormattedDate failed", e)
             "N/A"
@@ -143,7 +151,7 @@ object TimeUtils {
     }
 
     fun formatDate(date: Long): String =
-        formatInstant(Instant.ofEpochMilli(date), "") { dateOnlyFormatter() }
+        formatInstant(Instant.ofEpochMilli(date), "") { displayFormatter() }
 
     fun formatDate(
         date: Long,
@@ -154,7 +162,9 @@ object TimeUtils {
     fun parseDate(dateString: String): Long? =
         try {
             val localDate = runCatching {
-                LocalDate.parse(dateString, dateOnlyFormatter())
+                LocalDate.parse(dateString, displayFormatter())
+            }.recoverCatching {
+                LocalDate.parse(dateString, legacyDateFormatter())
             }.recoverCatching {
                 LocalDate.parse(dateString, fallbackDateFormatter())
             }.getOrThrow()
@@ -189,21 +199,32 @@ object TimeUtils {
         }
     }
 
+    private fun parseStoredDate(dateString: String): LocalDate =
+        if (dateString.contains("T")) {
+            val cleaned = dateString.replace("T", " ").replace(".000Z", "")
+            LocalDateTime.parse(cleaned, formatterFor("yyyy-MM-dd HH:mm:ss", locale = null)).toLocalDate()
+        } else {
+            LocalDate.parse(dateString, formatterFor("yyyy-MM-dd", locale = null))
+        }
+
+    // For the birth date form field, which BirthDatePicker and convertDDMMYYYYToISO read back
     fun formatDateToDDMMYYYY(dateString: String?): String {
         return try {
             if (dateString.isNullOrBlank()) return ""
-
-            val localDate = if (dateString.contains("T")) {
-                val cleaned = dateString.replace("T", " ").replace(".000Z", "")
-                LocalDateTime.parse(cleaned, formatterFor("yyyy-MM-dd HH:mm:ss", locale = null)).toLocalDate()
-            } else {
-                LocalDate.parse(dateString, formatterFor("yyyy-MM-dd", locale = null))
-            }
-
-            val formatter = formatterFor("dd-MM-yyyy")
-            localDate.format(formatter)
+            parseStoredDate(dateString).format(formatterFor("dd-MM-yyyy"))
         } catch (e: Exception) {
             Log.w(TAG, "formatDateToDDMMYYYY failed", e)
+            dateString ?: ""
+        }
+    }
+
+    // For showing a stored birth date; "07-11-2000" could be July or November
+    fun formatBirthDate(dateString: String?): String {
+        return try {
+            if (dateString.isNullOrBlank()) return ""
+            parseStoredDate(dateString).format(displayFormatter())
+        } catch (e: Exception) {
+            Log.w(TAG, "formatBirthDate failed", e)
             dateString ?: ""
         }
     }

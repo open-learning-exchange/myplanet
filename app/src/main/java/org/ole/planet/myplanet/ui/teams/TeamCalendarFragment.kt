@@ -24,7 +24,6 @@ import java.net.MalformedURLException
 import java.net.URL
 import java.time.Instant
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Locale
 import kotlinx.coroutines.launch
@@ -190,14 +189,14 @@ class TeamCalendarFragment : BaseTeamFragment() {
     private fun setDatePickerListener(view: TextView, date: Calendar?, endDate: Calendar?) {
         val initCal = date ?: Calendar.getInstance()
         if (date != null && endDate != null) {
-            view.text = date.timeInMillis.let { it1 -> TimeUtils.formatDate(it1, "yyyy-MM-dd") }
+            view.text = date.timeInMillis.let { it1 -> TimeUtils.formatDate(it1) }
         }
         view.setOnClickListener {
             DatePickerDialog(requireActivity(), { _, year, monthOfYear, dayOfMonth ->
                 date?.set(Calendar.YEAR, year)
                 date?.set(Calendar.MONTH, monthOfYear)
                 date?.set(Calendar.DAY_OF_MONTH, dayOfMonth)
-                view.text = date?.timeInMillis?.let { it1 -> TimeUtils.formatDate(it1, "yyyy-MM-dd") }
+                view.text = date?.timeInMillis?.let { it1 -> TimeUtils.formatDate(it1) }
             }, initCal.get(Calendar.YEAR),
                 initCal.get(Calendar.MONTH),
                 initCal.get(Calendar.DAY_OF_MONTH)).show()
@@ -285,8 +284,8 @@ class TeamCalendarFragment : BaseTeamFragment() {
         val editStart = Calendar.getInstance().apply { timeInMillis = meetup.startDate }
         val editEnd = Calendar.getInstance().apply { timeInMillis = meetup.endDate }
 
-        dialogBinding.tvStartDate.text = TimeUtils.formatDate(meetup.startDate, "yyyy-MM-dd")
-        dialogBinding.tvEndDate.text = TimeUtils.formatDate(meetup.endDate, "yyyy-MM-dd")
+        dialogBinding.tvStartDate.text = TimeUtils.formatDate(meetup.startDate)
+        dialogBinding.tvEndDate.text = TimeUtils.formatDate(meetup.endDate)
         dialogBinding.tvStartTime.text = meetup.startTime?.ifEmpty { getString(R.string.click_here_to_pick_time) } ?: getString(R.string.click_here_to_pick_time)
         dialogBinding.tvEndTime.text = meetup.endTime?.ifEmpty { getString(R.string.click_here_to_pick_time) } ?: getString(R.string.click_here_to_pick_time)
 
@@ -299,13 +298,13 @@ class TeamCalendarFragment : BaseTeamFragment() {
         dialogBinding.tvStartDate.setOnClickListener {
             DatePickerDialog(requireActivity(), { _, year, month, day ->
                 editStart.set(year, month, day)
-                dialogBinding.tvStartDate.text = TimeUtils.formatDate(editStart.timeInMillis, "yyyy-MM-dd")
+                dialogBinding.tvStartDate.text = TimeUtils.formatDate(editStart.timeInMillis)
             }, editStart.get(Calendar.YEAR), editStart.get(Calendar.MONTH), editStart.get(Calendar.DAY_OF_MONTH)).show()
         }
         dialogBinding.tvEndDate.setOnClickListener {
             DatePickerDialog(requireActivity(), { _, year, month, day ->
                 editEnd.set(year, month, day)
-                dialogBinding.tvEndDate.text = TimeUtils.formatDate(editEnd.timeInMillis, "yyyy-MM-dd")
+                dialogBinding.tvEndDate.text = TimeUtils.formatDate(editEnd.timeInMillis)
             }, editEnd.get(Calendar.YEAR), editEnd.get(Calendar.MONTH), editEnd.get(Calendar.DAY_OF_MONTH)).show()
         }
         setTimePicker(dialogBinding.tvStartTime)
@@ -409,20 +408,6 @@ class TeamCalendarFragment : BaseTeamFragment() {
         llImage?.removeAllViews()
     }
 
-    private var dateFormatter: DateTimeFormatter? = null
-    private var lastLocale: Locale? = null
-
-    private fun getDateFormatter(): DateTimeFormatter {
-        val currentLocale = Locale.getDefault()
-        val cached = dateFormatter
-        if (cached != null && lastLocale == currentLocale) {
-            return cached
-        }
-        return DateTimeFormatter.ofPattern("EEE, MMM d, yyyy", currentLocale).withZone(ZoneId.systemDefault()).also {
-            dateFormatter = it
-            lastLocale = currentLocale
-        }
-    }
 
     private fun getCardViewHeight(context: Context): Int {
         val currentWidth = Resources.getSystem().displayMetrics.widthPixels
@@ -446,7 +431,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         val recyclerView = dialogView.findViewById<RecyclerView>(R.id.rvMeetups)
         recyclerView.setHasFixedSize(true)
         val dialogTitle = dialogView.findViewById< TextView>(R.id.tvTitle)
-        dialogTitle.text = getDateFormatter().format(clickedCalendar.toInstant())
+        dialogTitle.text = TimeUtils.formatDate(clickedCalendar.timeInMillis)
         val extraHeight = TypedValue.applyDimension(
             TypedValue.COMPLEX_UNIT_DIP, 12f, resources.displayMetrics
         ).toInt()

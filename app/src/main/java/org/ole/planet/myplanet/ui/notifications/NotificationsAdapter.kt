@@ -7,9 +7,6 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNotificationHeaderBinding
@@ -17,6 +14,7 @@ import org.ole.planet.myplanet.databinding.RowNotificationsBinding
 import org.ole.planet.myplanet.model.Notification
 import org.ole.planet.myplanet.model.NotificationListItem
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.TimeUtils
 
 class NotificationsAdapter(
     private val onMarkAsReadClick: (String) -> Unit,
@@ -37,21 +35,7 @@ class NotificationsAdapter(
     )
 ) {
 
-    private var dateFormatter: DateTimeFormatter? = null
-    private var lastLocale: Locale? = null
     private val parsedHtmlCache = LruCache<String, CharSequence>(100)
-
-    private fun getDateFormatter(): DateTimeFormatter {
-        val currentLocale = Locale.getDefault()
-        val cached = dateFormatter
-        if (cached != null && lastLocale == currentLocale) {
-            return cached
-        }
-        return DateTimeFormatter.ofPattern("MMM d, yyyy", currentLocale).withZone(ZoneId.systemDefault()).also {
-            dateFormatter = it
-            lastLocale = currentLocale
-        }
-    }
 
     companion object {
         private const val VIEW_TYPE_HEADER = 0
@@ -192,7 +176,7 @@ class NotificationsAdapter(
                 diff < 86_400_000L -> context.getString(R.string.hours_ago, diff / 3_600_000L)
                 diff < 172_800_000L -> context.getString(R.string.yesterday)
                 diff < 604_800_000L -> context.getString(R.string.days_ago, diff / 86_400_000L)
-                else -> getDateFormatter().format(Instant.ofEpochMilli(createdAt))
+                else -> TimeUtils.formatDate(createdAt)
             }
         }
     }

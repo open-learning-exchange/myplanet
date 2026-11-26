@@ -257,8 +257,8 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
         startTimeStamp = currentReport.startDate.toString()
         endTimeStamp = currentReport.endDate.toString()
 
-        dialogAddReportBinding.startDate.text = getString(R.string.message_placeholder, TimeUtils.formatDate(currentReport.startDate, " MMM dd, yyyy"))
-        dialogAddReportBinding.endDate.text = getString(R.string.message_placeholder, TimeUtils.formatDate(currentReport.endDate, " MMM dd, yyyy"))
+        dialogAddReportBinding.startDate.text = getString(R.string.message_placeholder, TimeUtils.formatDate(currentReport.startDate))
+        dialogAddReportBinding.endDate.text = getString(R.string.message_placeholder, TimeUtils.formatDate(currentReport.endDate))
         dialogAddReportBinding.summary.setText(getString(R.string.message_placeholder, currentReport.description))
         dialogAddReportBinding.beginningBalance.setText(AmountUtils.toPlainString(currentReport.beginningBalance))
         dialogAddReportBinding.sales.setText(AmountUtils.toPlainString(currentReport.sales))

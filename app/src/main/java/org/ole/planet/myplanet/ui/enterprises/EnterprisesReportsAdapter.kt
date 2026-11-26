@@ -69,7 +69,7 @@ class EnterprisesReportsAdapter(
         report?.let {
             val totals = reportTotals(it)
             with(binding) {
-                date.text = context.getString(R.string.string_range, TimeUtils.formatDate(it.startDate, " MMM dd, yyyy"), TimeUtils.formatDate(it.endDate, "MMM dd, yyyy"))
+                date.text = context.getString(R.string.string_range, TimeUtils.formatDate(it.startDate), TimeUtils.formatDate(it.endDate))
                 beginningBalanceValue.text = AmountUtils.format(it.beginningBalance)
                 salesValue.text = AmountUtils.format(it.sales)
                 otherValue.text = AmountUtils.format(it.otherIncome)
@@ -80,7 +80,7 @@ class EnterprisesReportsAdapter(
                 profitLossValue.text = AmountUtils.format(totals.profitLoss)
                 endingBalanceValue.text = AmountUtils.format(totals.endingBalance)
                 tvReportDetails.text = context.getString(R.string.message_placeholder, it.description)
-                createUpdate.text = context.getString(R.string.report_date_details, TimeUtils.formatDate(it.createdDate, "MMM dd, yyyy"), TimeUtils.formatDate(it.updatedDate, "MMM dd, yyyy"))
+                createUpdate.text = context.getString(R.string.report_date_details, TimeUtils.formatDate(it.createdDate), TimeUtils.formatDate(it.updatedDate))
             }
             bindReportImage(binding, it)
         }

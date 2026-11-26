@@ -23,6 +23,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.time.format.DateTimeParseException
 import java.util.Calendar
 import java.util.Locale
@@ -34,7 +35,7 @@ import org.ole.planet.myplanet.databinding.HeaderFinanceBinding
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.utils.AmountUtils
-import org.ole.planet.myplanet.utils.TimeUtils.formatDateTZ
+import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.utils.collectWhenStarted
@@ -44,7 +45,8 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
     private val viewModel: EnterprisesFinancesViewModel by viewModels()
     private var _binding: FragmentFinanceBinding? = null
     private val binding get() = _binding!!
-    private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.getDefault()).withZone(ZoneId.systemDefault())
+    // Shown in the filter fields and parsed back from them, so it matches the app-wide date style
+    private val dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(Locale.getDefault()).withZone(ZoneId.systemDefault())
     private lateinit var addTransactionBinding: DialogAddTransactionBinding
     private lateinit var financeAdapter: EnterprisesFinancesAdapter
     private lateinit var headerAdapter: FinanceHeaderAdapter
@@ -67,7 +69,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
             date?.set(Calendar.MONTH, monthOfYear)
             date?.set(Calendar.DAY_OF_MONTH, dayOfMonth)
             if (date != null) {
-                addTransactionBinding.tvSelectDate.text = date?.timeInMillis?.let { formatDateTZ(it) }
+                addTransactionBinding.tvSelectDate.text = date?.timeInMillis?.let { formatDate(it) }
             }
         }
 
@@ -324,7 +326,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         addTransactionBinding = DialogAddTransactionBinding.inflate(LayoutInflater.from(activity))
         selectedImageUri = null
         date = Calendar.getInstance().also { today ->
-            addTransactionBinding.tvSelectDate.text = formatDateTZ(today.timeInMillis)
+            addTransactionBinding.tvSelectDate.text = formatDate(today.timeInMillis)
         }
         dialogImagePreview = addTransactionBinding.imagePreview
         addTransactionBinding.btnAddImage.setOnClickListener {

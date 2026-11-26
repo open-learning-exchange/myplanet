@@ -14,7 +14,7 @@ internal object HealthExaminationItemMapper {
     ): List<HealthExaminationAdapter.HealthExaminationItem> {
         val displayNameCache = mutableMapOf<String, String>()
         return list.map { item ->
-            val formattedDate = formatDate(item.date, "MMM dd, yyyy")
+            val formattedDate = formatDate(item.date)
             val encrypted = userModel?.let { user -> item.getEncryptedDataAsJson(user) }
             val createdBy = getString("createdBy", encrypted)
 

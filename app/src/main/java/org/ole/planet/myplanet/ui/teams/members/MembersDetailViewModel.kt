@@ -3,16 +3,13 @@ package org.ole.planet.myplanet.ui.teams.members
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.repository.ActivitiesRepository
+import org.ole.planet.myplanet.utils.TimeUtils
 
 /**
  * Visit stats for the member currently on screen. A `null` field means the value could not be
@@ -34,11 +31,6 @@ class MembersDetailViewModel @Inject constructor(
 
     private var loadRequested = false
 
-    private val dateFormatter: DateTimeFormatter by lazy {
-        DateTimeFormatter.ofPattern("MMMM dd, yyyy hh:mm a", Locale.getDefault())
-            .withZone(ZoneId.systemDefault())
-    }
-
     fun loadMemberVisitStats(memberId: String?, username: String?) {
         if (memberId.isNullOrEmpty() && username.isNullOrEmpty()) return
         if (loadRequested) return
@@ -47,7 +39,7 @@ class MembersDetailViewModel @Inject constructor(
             val stats = activitiesRepository.getMemberVisitStats(memberId, username)
             _visitStats.value = MemberVisitStatsUiState(
                 numberOfVisits = if (memberId.isNullOrEmpty()) null else stats.offlineVisitCount.toString(),
-                lastLogin = stats.lastVisit?.let { dateFormatter.format(Instant.ofEpochMilli(it)) }
+                lastLogin = stats.lastVisit?.let { TimeUtils.getFormattedDateWithTime(it) }
             )
         }
     }
