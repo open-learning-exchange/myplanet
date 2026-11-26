@@ -64,7 +64,6 @@ import org.ole.planet.myplanet.databinding.CustomTabBinding
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.ChallengePrompter
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -74,6 +73,7 @@ import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.components.showThemeModePicker
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
+import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
 import org.ole.planet.myplanet.ui.notifications.NotificationsFragment
 import org.ole.planet.myplanet.ui.onboarding.OnboardingActivity
@@ -89,13 +89,11 @@ import org.ole.planet.myplanet.ui.teams.TeamPageConfig.JoinRequestsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
 import org.ole.planet.myplanet.ui.user.LearnerRegistrationActivity
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.ServerConfigUtils
-import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities.toast
 import org.ole.planet.myplanet.utils.collectWhenStarted
@@ -111,20 +109,15 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     var user: UserEntity? = null
     var result: Drawer? = null
     private var tl: TabLayout? = null
+    private var syncingTopTab = false
+    private var topTabIndicator: Drawable? = null
     private var dl: DrawerLayout? = null
     private val dashboardViewModel: DashboardViewModel by viewModels()
     private lateinit var tabSelectedListener: OnTabSelectedListener
     @Inject
-    override lateinit var dispatcherProvider: DispatcherProvider
-    @Inject
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var themeManager: ThemeManager
-    @Inject
-    override lateinit var timeProvider: TimeProvider
-
-    @Inject
-    override lateinit var resourcesRepository: ResourcesRepository
     @Inject
     lateinit var notificationManagerProvider: Lazy<NotificationUtils.NotificationManager>
     private val challengeManager: ChallengePrompter by lazy {
@@ -349,6 +342,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 else -> null
             }
             idToSelect?.let { result?.setSelection(it, false) }
+            syncTopTab()
         }
         backStackListener?.let { supportFragmentManager.addOnBackStackChangedListener(it) }
         result?.actionBarDrawerToggle?.isDrawerIndicatorEnabled = true
@@ -820,12 +814,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val tabLayout = findViewById<TabLayout>(R.id.tab_layout)
         tabSelectedListener = object : OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab) {
-                onClickTabItems(tab.position)
+                if (!syncingTopTab) onClickTabItems(tab.position)
             }
 
             override fun onTabUnselected(tab: TabLayout.Tab) {}
             override fun onTabReselected(tab: TabLayout.Tab) {
-                onClickTabItems(tab.position)
+                if (!syncingTopTab) onClickTabItems(tab.position)
             }
         }
         tabLayout.addOnTabSelectedListener(tabSelectedListener)
@@ -839,6 +833,29 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             tabLayout.getTabAt(i)?.customView = customTabBinding.root
         }
         tabLayout.isTabIndicatorFullWidth = false
+    }
+
+    private fun topTabFor(fragment: Fragment?): Int? = when (fragment) {
+        is BellDashboardFragment -> 0
+        is ResourcesFragment, is ResourceDetailFragment -> 1
+        is CoursesFragment, is TakeCourseFragment -> 2
+        is TeamFragment -> if (fragment.arguments?.getString("type") == "enterprise") 4 else 3
+        is TeamDetailFragment -> if (fragment.arguments?.getString("teamType") == "enterprise") 4 else 3
+        is CommunityTabFragment -> 5
+        else -> null
+    }
+
+    private fun syncTopTab() {
+        val tabLayout = tl ?: return
+        val tab = topTabFor(supportFragmentManager.findFragmentById(R.id.fragment_container))
+            ?.let { tabLayout.getTabAt(it) }
+
+        val indicator = topTabIndicator ?: tabLayout.tabSelectedIndicator.also { topTabIndicator = it }
+        tabLayout.setSelectedTabIndicator(if (tab == null) null else indicator)
+        if (tab != null && tab.isSelected) return
+        syncingTopTab = true
+        tabLayout.selectTab(tab)
+        syncingTopTab = false
     }
 
     private fun UITheme() {
@@ -1099,6 +1116,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         super.onResume()
         checkNotificationPermissionStatus()
         updateLastSyncStatus()
+        syncTopTab()
     }
 
     override fun onNewIntent(intent: Intent?) {
