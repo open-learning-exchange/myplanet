@@ -23,11 +23,13 @@
             android:paddingTop="@dimen/profile_banner_padding_top"
             android:paddingStart="@dimen/padding_large"
             android:paddingEnd="@dimen/padding_large"
-            android:paddingBottom="@dimen/profile_banner_padding_bottom">
+            android:paddingBottom="@dimen/profile_banner_padding_bottom"
+            android:clipChildren="false">
 
             <FrameLayout
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                android:clipChildren="false">
 
                 <de.hdodenhof.circleimageview.CircleImageView
                     android:id="@+id/image"
@@ -50,7 +52,7 @@
                     android:padding="@dimen/profile_fab_icon_padding"
                     android:scaleType="fitCenter"
                     android:src="@drawable/ic_edit"
-                    android:tint="@color/colorPrimary" />
+                    android:tint="@color/colorPrimaryWhite" />
             </FrameLayout>
 
             <TextView
