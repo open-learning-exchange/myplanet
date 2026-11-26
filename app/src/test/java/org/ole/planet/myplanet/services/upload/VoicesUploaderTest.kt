@@ -316,6 +316,50 @@ class VoicesUploaderTest {
     }
 
     @Test
+    fun `a reply to a post written offline uploads in the same sync as its parent`() = testScope.runTest {
+        val parent = NewsUploadData("post", null, "Post", emptyList(), JsonObject().apply { addProperty("message", "Post") })
+        val reply = NewsUploadData("reply", null, "Reply", emptyList(), JsonObject().apply {
+            addProperty("message", "Reply")
+            addProperty("replyTo", "post_server_id")
+        })
+        // The reply only becomes uploadable once the parent has its server _id.
+        coEvery { voicesRepository.getNewsForUpload() } returnsMany listOf(listOf(parent), listOf(reply), emptyList())
+        val payloads = mutableListOf<JsonObject>()
+        coEvery { uploadRepository.postUploadArray(any(), capture(payloads)) } answers {
+            val docs = secondArg<JsonObject>().getAsJsonArray("docs")
+            Response.success(JsonArray().apply {
+                docs.forEach { doc ->
+                    add(JsonObject().apply {
+                        addProperty("ok", true)
+                        addProperty("id", "${doc.asJsonObject["message"].asString.lowercase()}_server_id")
+                        addProperty("rev", "1-a")
+                    })
+                }
+            })
+        }
+
+        voicesUploader.uploadNews()
+        advanceUntilIdle()
+
+        assertEquals(2, payloads.size)
+        assertEquals("post_server_id", payloads[1].getAsJsonArray("docs")[0].asJsonObject["replyTo"].asString)
+        coVerify { voicesRepository.markNewsUploaded(match { it.single().id == "post" }) }
+        coVerify { voicesRepository.markNewsUploaded(match { it.single().id == "reply" }) }
+    }
+
+    @Test
+    fun `items that fail are not retried again within the same upload`() = testScope.runTest {
+        val news = NewsUploadData("n1", null, "Hi", emptyList(), JsonObject().apply { addProperty("message", "Hi") })
+        coEvery { voicesRepository.getNewsForUpload() } returns listOf(news)
+        coEvery { uploadRepository.postUploadArray(any(), any()) } returns Response.error(500, "{}".toResponseBody(null))
+
+        voicesUploader.uploadNews()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { uploadRepository.postUploadArray(any(), any()) }
+    }
+
+    @Test
     fun `uploadNews deletes voices removed on this device from the server`() = testScope.runTest {
         coEvery { voicesRepository.getNewsForUpload() } returns emptyList()
         coEvery { voicesRepository.getPendingNewsDeletions() } returns listOf("gone", "alreadyGone")

@@ -82,92 +82,101 @@ class VoicesUploader @Inject constructor(
 
     suspend fun uploadNews() {
         val user = userRepository.getUserModel()
-        val newsItems = voicesRepository.getNewsForUpload()
 
         withContext(dispatcherProvider.io) {
-            newsItems.processInBatches { batch ->
-                val successfulUpdates = mutableListOf<NewsUpdateData>()
-                val processedNews = mutableListOf<PreparedNews>()
-                val uploadedFiles = mutableListOf<UploadedImage>()
-
-                batch.forEach { news ->
-                    try {
-                        val imagesArray = (news.newsJson.get("images") as? JsonArray)?.deepCopy() ?: JsonArray()
-                        val messageWithImages = StringBuilder(news.message ?: "")
-
-                        val files = mutableListOf<UploadedImage>()
-                        news.imageUrls.forEach { imageUrl ->
-                            val imgObject = gson.fromJson(imageUrl, JsonObject::class.java)
-                            val imageFile = File(getString("imageUrl", imgObject))
-                            if (!imageFile.isFile) {
-                                Log.w(TAG, "Dropping image ${imageFile.name} from voice ${news.id}: file is gone")
-                                return@forEach
-                            }
-                            val resourceId = getString("resourceId", imgObject).ifEmpty { legacyResourceId(news, imageUrl) }
-                            val fileName = safeFileName(imageFile.name)
-                            putImage(user, resourceId, fileName, imageFile)
-                            files.add(UploadedImage(imageFile, resourceId, fileName))
-
-                            val resourceObject = JsonObject()
-                            resourceObject.addProperty("resourceId", resourceId)
-                            resourceObject.addProperty("filename", fileName)
-                            val markdown = "![](resources/$resourceId/$fileName)"
-                            resourceObject.addProperty("markdown", markdown)
-                            imagesArray.add(resourceObject)
-
-                            messageWithImages.append("\n").append(markdown)
-                        }
-
-                        val newsJson = news.newsJson
-                        newsJson.addProperty("message", messageWithImages.toString())
-                        newsJson.add("images", imagesArray)
-
-                        processedNews.add(PreparedNews(news, imagesArray, files))
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Exception in VoicesUploader processing images for news", e)
-                        val isCreate = TextUtils.isEmpty(news._id)
-                        queueNewsRetry(news, news.newsJson, null, if (isCreate) "POST" else "PUT", e)
-                    }
-                }
-
-                BulkDocsUploader.upload(
-                    uploadRepository,
-                    "${UrlUtils.getUrl()}/news/_bulk_docs",
-                    processedNews.map { it to it.news.newsJson }
-                ) { prepared, outcome ->
-                    val news = prepared.news
-                    val isCreate = TextUtils.isEmpty(news._id)
-                    when (outcome) {
-                        is BulkDocsUploader.Outcome.Accepted -> {
-                            successfulUpdates.add(
-                                NewsUpdateData(
-                                    id = news.id,
-                                    _id = getString("id", outcome.element),
-                                    _rev = getString("rev", outcome.element),
-                                    imagesArray = prepared.imagesArray,
-                                    pendingReactions = news.pendingReactions,
-                                    message = getString("message", news.newsJson)
-                                )
-                            )
-                            uploadedFiles.addAll(prepared.files)
-                        }
-                        is BulkDocsUploader.Outcome.Rejected -> {
-                            val errorReason = outcome.element.get("error").asString
-                            if (errorReason == "conflict") return@upload
-                            queueNewsRetry(news, news.newsJson, null, if (isCreate) "POST" else "PUT", Exception("Bulk upload error: $errorReason"))
-                        }
-                        is BulkDocsUploader.Outcome.RequestFailed -> {
-                            queueNewsRetry(news, news.newsJson, outcome.httpCode, if (isCreate) "POST" else "PUT", outcome.exception)
-                        }
-                    }
-                }
-
-                if (successfulUpdates.isNotEmpty()) {
-                    voicesRepository.markNewsUploaded(successfulUpdates)
-                    keepAsResourceCopies(uploadedFiles)
-                }
+            val attempted = mutableSetOf<String?>()
+            while (true) {
+                val newsItems = voicesRepository.getNewsForUpload().filter { it.id !in attempted }
+                if (newsItems.isEmpty()) break
+                attempted += newsItems.map { it.id }
+                uploadNewsItems(user, newsItems)
             }
             uploadNewsDeletions()
+        }
+    }
+
+    private suspend fun uploadNewsItems(user: UserEntity?, newsItems: List<NewsUploadData>) {
+        newsItems.processInBatches { batch ->
+            val successfulUpdates = mutableListOf<NewsUpdateData>()
+            val processedNews = mutableListOf<PreparedNews>()
+            val uploadedFiles = mutableListOf<UploadedImage>()
+
+            batch.forEach { news ->
+                try {
+                    val imagesArray = (news.newsJson.get("images") as? JsonArray)?.deepCopy() ?: JsonArray()
+                    val messageWithImages = StringBuilder(news.message ?: "")
+
+                    val files = mutableListOf<UploadedImage>()
+                    news.imageUrls.forEach { imageUrl ->
+                        val imgObject = gson.fromJson(imageUrl, JsonObject::class.java)
+                        val imageFile = File(getString("imageUrl", imgObject))
+                        if (!imageFile.isFile) {
+                            Log.w(TAG, "Dropping image ${imageFile.name} from voice ${news.id}: file is gone")
+                            return@forEach
+                        }
+                        val resourceId = getString("resourceId", imgObject).ifEmpty { legacyResourceId(news, imageUrl) }
+                        val fileName = safeFileName(imageFile.name)
+                        putImage(user, resourceId, fileName, imageFile)
+                        files.add(UploadedImage(imageFile, resourceId, fileName))
+
+                        val resourceObject = JsonObject()
+                        resourceObject.addProperty("resourceId", resourceId)
+                        resourceObject.addProperty("filename", fileName)
+                        val markdown = "![](resources/$resourceId/$fileName)"
+                        resourceObject.addProperty("markdown", markdown)
+                        imagesArray.add(resourceObject)
+
+                        messageWithImages.append("\n").append(markdown)
+                    }
+
+                    val newsJson = news.newsJson
+                    newsJson.addProperty("message", messageWithImages.toString())
+                    newsJson.add("images", imagesArray)
+
+                    processedNews.add(PreparedNews(news, imagesArray, files))
+                } catch (e: Exception) {
+                    Log.e(TAG, "Exception in VoicesUploader processing images for news", e)
+                    val isCreate = TextUtils.isEmpty(news._id)
+                    queueNewsRetry(news, news.newsJson, null, if (isCreate) "POST" else "PUT", e)
+                }
+            }
+
+            BulkDocsUploader.upload(
+                uploadRepository,
+                "${UrlUtils.getUrl()}/news/_bulk_docs",
+                processedNews.map { it to it.news.newsJson }
+            ) { prepared, outcome ->
+                val news = prepared.news
+                val isCreate = TextUtils.isEmpty(news._id)
+                when (outcome) {
+                    is BulkDocsUploader.Outcome.Accepted -> {
+                        successfulUpdates.add(
+                            NewsUpdateData(
+                                id = news.id,
+                                _id = getString("id", outcome.element),
+                                _rev = getString("rev", outcome.element),
+                                imagesArray = prepared.imagesArray,
+                                pendingReactions = news.pendingReactions,
+                                message = getString("message", news.newsJson)
+                            )
+                        )
+                        uploadedFiles.addAll(prepared.files)
+                    }
+                    is BulkDocsUploader.Outcome.Rejected -> {
+                        val errorReason = outcome.element.get("error").asString
+                        if (errorReason == "conflict") return@upload
+                        queueNewsRetry(news, news.newsJson, null, if (isCreate) "POST" else "PUT", Exception("Bulk upload error: $errorReason"))
+                    }
+                    is BulkDocsUploader.Outcome.RequestFailed -> {
+                        queueNewsRetry(news, news.newsJson, outcome.httpCode, if (isCreate) "POST" else "PUT", outcome.exception)
+                    }
+                }
+            }
+
+            if (successfulUpdates.isNotEmpty()) {
+                voicesRepository.markNewsUploaded(successfulUpdates)
+                keepAsResourceCopies(uploadedFiles)
+            }
         }
     }
 
