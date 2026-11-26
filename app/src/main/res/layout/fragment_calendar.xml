@@ -12,7 +12,7 @@
         android:layout_height="wrap_content"
         app:abbreviationsBarColor="@color/daynight_grey"
         app:abbreviationsLabelsColor="@color/daynight_textColor"
-        app:anotherMonthsDaysLabelsColor="@color/hint_color"
+        app:anotherMonthsDaysLabelsColor="@color/calendar_other_month_day"
         app:daysLabelsColor="@color/daynight_textColor"
         app:headerColor="@color/colorPrimary"
         app:pagesColor="@color/secondary_bg" />

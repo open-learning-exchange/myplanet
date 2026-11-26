@@ -7,6 +7,7 @@
     <color name="colorAccent">@color/md_red_500</color>
     <color name="textColorPrimary">#ffffff</color>
     <color name="disable_color">#BDBDBD</color>
+    <color name="calendar_other_month_day">@color/disable_color</color>
     <color name="daynight_textColor">@color/md_black_1000</color>
     <color name="daynight_grey">@color/md_blue_grey_50</color>
     <color name="daynight_white_grey">#FFFFFF</color>
