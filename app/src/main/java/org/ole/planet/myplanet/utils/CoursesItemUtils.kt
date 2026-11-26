@@ -128,7 +128,6 @@ internal object CoursesItemUtils {
         return parts.joinToString(" · ")
     }
 
-    // Next to the step count a bare "8" reads like another count, so numbered grades say "Grade 8".
     private fun gradeLevelMetaLabel(context: Context, value: String): String =
         if (value.toIntOrNull() != null) context.getString(R.string.course_grade_number, value)
         else gradeLevelLabel(context, value)
