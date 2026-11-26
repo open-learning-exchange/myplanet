@@ -51,14 +51,5 @@
             android:layout_marginTop="4dp"
             android:textColor="@color/daynight_textColor"
             android:textSize="14sp" />
-        <TextView
-            android:id="@+id/tv_question_type"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:textColor="@color/daynight_textColor"
-            android:textSize="11sp"
-            android:visibility="gone"
-            tools:visibility="visible" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

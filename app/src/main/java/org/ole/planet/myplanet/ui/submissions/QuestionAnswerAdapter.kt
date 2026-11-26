@@ -37,13 +37,6 @@ class QuestionAnswerAdapter : ListAdapter<QuestionAnswer, QuestionAnswerAdapter.
 
             val answerText = formatAnswer(qa)
             binding.tvAnswerValue.text = answerText
-
-            if (qa.questionType != null) {
-                binding.tvQuestionType.visibility = View.VISIBLE
-                binding.tvQuestionType.text = "Type: ${qa.questionType}"
-            } else {
-                binding.tvQuestionType.visibility = View.GONE
-            }
         }
 
         private fun formatAnswer(qa: QuestionAnswer): String {
