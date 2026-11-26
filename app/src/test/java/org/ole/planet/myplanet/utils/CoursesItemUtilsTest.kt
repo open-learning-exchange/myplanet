@@ -55,6 +55,22 @@ class CoursesItemUtilsTest {
     }
 
     @Test
+    fun buildMetaLine_labelsNumberedGradeSoItIsNotReadAsACount() {
+        val course = Course("c1", "Title", "", gradeLevel = "8", subjectLevel = "", createdDate = 0L, numberOfSteps = 3)
+
+        assertEquals("3 steps · Grade 8", CoursesItemUtils.buildMetaLine(activity, course))
+    }
+
+    @Test
+    fun buildMetaLine_keepsNamedGradesAndSkipsMissingOnes() {
+        val college = Course("c1", "Title", "", gradeLevel = "College", subjectLevel = "", createdDate = 0L, numberOfSteps = 2)
+        val noGrade = Course("c2", "Title", "", gradeLevel = "", subjectLevel = "", createdDate = 0L, numberOfSteps = 2)
+
+        assertEquals("2 steps · College", CoursesItemUtils.buildMetaLine(activity, college))
+        assertEquals("2 steps", CoursesItemUtils.buildMetaLine(activity, noGrade))
+    }
+
+    @Test
     fun testBindCover_cachesExistenceCheckWithinTtlAndRestatsAfterTtl() {
         val testFile = tempFolder.newFile("cover.jpg")
         val spyFile = spyk(testFile)

@@ -1422,6 +1422,7 @@
     <string name="view_list">عرض قائمة</string>
     <string name="steps_done_of_total">%1$d من %2$d مكتملة</string>
     <string name="course_steps_count">%d خطوات</string>
+    <string name="course_grade_number">الصف %s</string>
     <string name="subject_label_mathematics">الرياضيات</string>
     <string name="subject_label_literacy">القراءة والكتابة</string>
     <string name="subject_label_health">الصحة</string>

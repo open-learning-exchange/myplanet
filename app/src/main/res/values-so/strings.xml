@@ -1406,6 +1406,7 @@
     <string name="view_list">Muuqaal liis</string>
     <string name="steps_done_of_total">%1$d ka mid ah %2$d ayaa la dhammeeyay</string>
     <string name="course_steps_count">%d tallaabo</string>
+    <string name="course_grade_number">Fasalka %s</string>
     <string name="subject_label_mathematics">Xisaabta</string>
     <string name="subject_label_literacy">Aqoonyahannimada</string>
     <string name="subject_label_health">Caafimaadka</string>

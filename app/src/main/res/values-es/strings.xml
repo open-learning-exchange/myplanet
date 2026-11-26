@@ -1409,6 +1409,7 @@
     <string name="view_list">Vista de lista</string>
     <string name="steps_done_of_total">%1$d de %2$d completados</string>
     <string name="course_steps_count">%d pasos</string>
+    <string name="course_grade_number">Grado %s</string>
     <string name="subject_label_mathematics">Matemáticas</string>
     <string name="subject_label_literacy">Alfabetización</string>
     <string name="subject_label_health">Salud</string>
