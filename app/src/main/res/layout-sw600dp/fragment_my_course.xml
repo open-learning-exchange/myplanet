@@ -7,179 +7,188 @@
     android:layout_height="match_parent"
     tools:context=".ui.resources.ResourcesFragment">
 
-    <LinearLayout
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/app_bar_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/secondary_bg"
+        app:elevation="0dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_scrollFlags="scroll|enterAlways|snap">
+
+            <LinearLayout
+                android:id="@+id/ll_actions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:background="@color/colorPrimary"
+                android:gravity="end"
+                android:orientation="vertical"
+                android:padding="@dimen/padding_large">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@color/colorPrimary"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="@dimen/padding_normal">
+
+                    <TextView
+                        android:id="@+id/tv_fragment_info"
+                        android:layout_width="0dp"
+                        android:layout_height="40dp"
+                        android:layout_gravity="center_vertical"
+                        android:layout_margin="@dimen/_10dp"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical"
+                        android:padding="@dimen/padding_normal"
+                        android:text="@string/txt_myCourses"
+                        android:textColor="@color/md_white_1000"
+                        android:textSize="@dimen/text_size_large"
+                        android:textStyle="bold"
+                        android:maxLines="1"
+                        android:minWidth="150dp" />
+                    <include
+                        layout="@layout/view_grid_list_toggle" />
+                    <Button
+                        android:id="@+id/btn_remove"
+                        android:layout_width="70dp"
+                        android:layout_height="35dp"
+                        android:layout_gravity="center"
+                        android:layout_margin="@dimen/padding_small"
+                        android:background="@drawable/buttonblue"
+                        android:padding="8dp"
+                        android:text="@string/leave"
+                        android:textColor="@color/md_white_1000"
+                        android:textSize="13sp"
+                        android:visibility="gone" />
+                    <TextView
+                        android:id="@+id/tv_add"
+                        style="@style/Widget.AppCompat.Button.Borderless.Colored"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:layout_gravity="center"
+                        android:layout_margin="@dimen/padding_small"
+                        android:drawablePadding="4dp"
+                        android:gravity="center"
+                        android:minWidth="160dp"
+                        android:text="@string/join_selected"
+                        android:textColor="@color/daynight_textColor"
+                        app:drawableTint="@color/daynight_textColor"
+                        android:textSize="@dimen/text_size_mid"
+                        app:drawableLeftCompat="@drawable/ic_add_library"/>
+                    <TextView
+                        android:id="@+id/tv_selected"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:layout_gravity="center"
+                        android:layout_margin="@dimen/_10dp"
+                        android:background="?attr/selectableItemBackground"
+                        android:gravity="start|center_vertical"
+                        android:text="@string/remove_selected"
+                        android:textColor="@color/daynight_textColor"
+                        android:textSize="@dimen/text_size_mid"
+                        android:visibility="gone"
+                        app:drawableLeftCompat="@drawable/ic_delete"
+                        app:drawableTint="@color/daynight_textColor"
+                        android:minWidth="120dp" />
+                    <Button
+                        android:id="@+id/btn_archive"
+                        android:layout_width="95dp"
+                        android:layout_height="35dp"
+                        android:layout_gravity="center"
+                        android:layout_margin="@dimen/_10dp"
+                        android:background="?attr/selectableItemBackground"
+                        android:gravity="start|center_vertical"
+                        android:text="@string/archive"
+                        android:textColor="@color/daynight_textColor"
+                        android:textSize="13sp"
+                        android:visibility="gone"
+                        app:drawableLeftCompat="@drawable/ic_delete"
+                        app:drawableTint="@color/daynight_textColor" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:background="@color/secondary_bg">
+
+                <CheckBox
+                    android:id="@+id/selectAllCourse"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10.5dp"
+                    android:layout_gravity="center"
+                    android:padding="8dp"
+                    android:layout_weight="1"
+                    android:text="@string/select_all"
+                    android:textColor="@color/daynight_textColor"
+                    android:textSize="@dimen/text_size_mid"
+                    android:buttonTint="@color/daynight_textColor"
+                    android:maxWidth="0dp"
+                    android:checked="false" />
+                <include
+                    android:id="@+id/layout_search"
+                    layout="@layout/layout_search_pill"
+                    android:layout_width="0dp"
+                    android:layout_margin="10.5dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1" />
+            </LinearLayout>
+
+            <HorizontalScrollView
+                android:id="@+id/scroll_chip_filter"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/secondary_bg"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:id="@+id/chip_filter_row"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingStart="@dimen/padding_normal"
+                    android:paddingTop="4dp"
+                    android:paddingEnd="@dimen/padding_normal"
+                    android:paddingBottom="8dp" />
+            </HorizontalScrollView>
+        </LinearLayout>
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:background="@color/secondary_bg"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-        <LinearLayout
-            android:id="@+id/ll_actions"
+        <org.ole.planet.myplanet.ui.components.MaxWidthFrameLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:background="@color/colorPrimary"
-            android:gravity="end"
-            android:orientation="vertical"
-            android:padding="@dimen/padding_large">
+            android:layout_height="match_parent"
+            android:layout_gravity="center_horizontal">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@color/colorPrimary"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="@dimen/padding_normal">
-
-                <TextView
-                    android:id="@+id/tv_fragment_info"
-                    android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_gravity="center_vertical"
-                    android:layout_margin="@dimen/_10dp"
-                    android:layout_weight="1"
-                    android:gravity="center_vertical"
-                    android:padding="@dimen/padding_normal"
-                    android:text="@string/txt_myCourses"
-                    android:textColor="@color/md_white_1000"
-                    android:textSize="@dimen/text_size_large"
-                    android:textStyle="bold"
-                    android:maxLines="1"
-                    android:minWidth="150dp" />
-                <include
-                    layout="@layout/view_grid_list_toggle" />
-                <Button
-                    android:id="@+id/btn_remove"
-                    android:layout_width="70dp"
-                    android:layout_height="35dp"
-                    android:layout_gravity="center"
-                    android:layout_margin="@dimen/padding_small"
-                    android:background="@drawable/buttonblue"
-                    android:padding="8dp"
-                    android:text="@string/leave"
-                    android:textColor="@color/md_white_1000"
-                    android:textSize="13sp"
-                    android:visibility="gone" />
-                <TextView
-                    android:id="@+id/tv_add"
-                    style="@style/Widget.AppCompat.Button.Borderless.Colored"
-                    android:layout_width="wrap_content"
-                    android:layout_height="40dp"
-                    android:layout_gravity="center"
-                    android:layout_margin="@dimen/padding_small"
-                    android:drawablePadding="4dp"
-                    android:gravity="center"
-                    android:minWidth="160dp"
-                    android:text="@string/join_selected"
-                    android:textColor="@color/daynight_textColor"
-                    app:drawableTint="@color/daynight_textColor"
-                    android:textSize="@dimen/text_size_mid"
-                    app:drawableLeftCompat="@drawable/ic_add_library"/>
-                <TextView
-                    android:id="@+id/tv_selected"
-                    android:layout_width="wrap_content"
-                    android:layout_height="40dp"
-                    android:layout_gravity="center"
-                    android:layout_margin="@dimen/_10dp"
-                    android:background="?attr/selectableItemBackground"
-                    android:gravity="start|center_vertical"
-                    android:text="@string/remove_selected"
-                    android:textColor="@color/daynight_textColor"
-                    android:textSize="@dimen/text_size_mid"
-                    android:visibility="gone"
-                    app:drawableLeftCompat="@drawable/ic_delete"
-                    app:drawableTint="@color/daynight_textColor"
-                    android:minWidth="120dp" />
-                <Button
-                    android:id="@+id/btn_archive"
-                    android:layout_width="95dp"
-                    android:layout_height="35dp"
-                    android:layout_gravity="center"
-                    android:layout_margin="@dimen/_10dp"
-                    android:background="?attr/selectableItemBackground"
-                    android:gravity="start|center_vertical"
-                    android:text="@string/archive"
-                    android:textColor="@color/daynight_textColor"
-                    android:textSize="13sp"
-                    android:visibility="gone"
-                    app:drawableLeftCompat="@drawable/ic_delete"
-                    app:drawableTint="@color/daynight_textColor" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:background="@color/secondary_bg">
-
-            <CheckBox
-                android:id="@+id/selectAllCourse"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="10.5dp"
-                android:layout_gravity="center"
-                android:padding="8dp"
-                android:layout_weight="1"
-                android:text="@string/select_all"
-                android:textColor="@color/daynight_textColor"
-                android:textSize="@dimen/text_size_mid"
-                android:buttonTint="@color/daynight_textColor"
-                android:maxWidth="0dp"
-                android:checked="false" />
-            <include
-                android:id="@+id/layout_search"
-                layout="@layout/layout_search_pill"
-                android:layout_width="0dp"
-                android:layout_margin="10.5dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1" />
-        </LinearLayout>
-
-        <HorizontalScrollView
-            android:id="@+id/scroll_chip_filter"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@color/secondary_bg"
-            android:scrollbars="none">
-
-            <LinearLayout
-                android:id="@+id/chip_filter_row"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:paddingStart="@dimen/padding_normal"
-                android:paddingTop="4dp"
-                android:paddingEnd="@dimen/padding_normal"
-                android:paddingBottom="8dp" />
-        </HorizontalScrollView>
-
-        <FrameLayout
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:background="@color/secondary_bg">
-
-            <org.ole.planet.myplanet.ui.components.MaxWidthFrameLayout
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recycler"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_gravity="center_horizontal">
+                android:clipToPadding="false"
+                android:paddingBottom="96dp" />
+        </org.ole.planet.myplanet.ui.components.MaxWidthFrameLayout>
 
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/recycler"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:clipToPadding="false"
-                    android:paddingBottom="96dp" />
-            </org.ole.planet.myplanet.ui.components.MaxWidthFrameLayout>
-
-            <TextView
-                android:id="@+id/tv_message"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/daynight_textColor"
-                android:layout_gravity="center" />
-        </FrameLayout>
-    </LinearLayout>
+        <TextView
+            android:id="@+id/tv_message"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/daynight_textColor"
+            android:layout_gravity="center" />
+    </FrameLayout>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabMyProgress"
