@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.health
 
-import android.app.DatePickerDialog
 import android.content.Context
 import android.content.res.Configuration
 import android.os.Bundle
@@ -10,11 +9,11 @@ import android.widget.ArrayAdapter
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.Calendar
 import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAddHealthBinding
 import org.ole.planet.myplanet.model.MyHealth
+import org.ole.planet.myplanet.ui.components.BirthDatePicker
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -49,13 +48,10 @@ class AddHealthActivity : AppCompatActivity() {
 
         initViews()
         val datePickerClickListener = View.OnClickListener {
-            val now = Calendar.getInstance()
-            val dpd = DatePickerDialog(this, { _, year, month, dayOfMonth ->
+            BirthDatePicker.show(this, binding.etBirthdateLayout.editText?.text?.toString()) { year, month, dayOfMonth ->
                 val selectedDate = String.format(Locale.US, "%02d-%02d-%04d", dayOfMonth, month + 1, year)
                 binding.etBirthdateLayout.editText?.setText(selectedDate)
-            }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH))
-            dpd.datePicker.maxDate = System.currentTimeMillis()
-            dpd.show()
+            }
         }
         binding.etBirthdateLayout.editText?.setOnClickListener(datePickerClickListener)
         binding.ivDatePicker.setOnClickListener(datePickerClickListener)
