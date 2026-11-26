@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.teams
 
+import android.content.Context
 import android.content.DialogInterface
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -37,6 +38,8 @@ import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ReportsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ResourcesPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.SurveyPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
+import org.ole.planet.myplanet.ui.teams.members.MembersFragment
+import org.ole.planet.myplanet.ui.teams.members.RequestsFragment
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
@@ -89,6 +92,17 @@ class TeamDetailFragment : BaseTeamFragment() {
             pages += MembersPage
         }
         return pages
+    }
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        childFragmentManager.addFragmentOnAttachListener { _, page ->
+            when (page) {
+                is MembersFragment -> page.setOnMemberChangeListener { onMemberChanged() }
+                is RequestsFragment -> page.setOnMemberChangeListener { onMemberChanged() }
+                is PlanFragment -> page.setTeamUpdateListener { onTeamDetailsUpdated() }
+            }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -155,7 +169,6 @@ class TeamDetailFragment : BaseTeamFragment() {
     private fun setupViewPager(isMyTeam: Boolean, restorePageId: String? = null) {
         pageConfigs = buildPages(isMyTeam)
         binding.viewPager2.apply {
-            isSaveEnabled = false
             offscreenPageLimit = 2
             isUserInputEnabled = true
             setPageTransformer { page, position ->
