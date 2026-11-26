@@ -11,14 +11,17 @@ import android.speech.SpeechRecognizer
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.util.TypedValue
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.core.view.children
 import androidx.core.view.isNotEmpty
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
@@ -505,6 +508,16 @@ class ChatDetailFragment : BaseBindingFragment<FragmentChatDetailBinding>(Fragme
         aiTableRow.getChildAt(0)?.performClick()
         isAiUnavailable = false
         refreshInputState()
+        aiTableRow.post { matchProviderButtonTextSizes(aiTableRow) }
+    }
+
+    private fun matchProviderButtonTextSizes(aiTableRow: LinearLayout) {
+        val buttons = aiTableRow.children.filterIsInstance<Button>().toList()
+        val smallest = buttons.minOfOrNull { it.textSize } ?: return
+        buttons.forEach {
+            it.setAutoSizeTextTypeWithDefaults(TextView.AUTO_SIZE_TEXT_TYPE_NONE)
+            it.setTextSize(TypedValue.COMPLEX_UNIT_PX, smallest)
+        }
     }
 
     private fun createProviderButton(context: Context, providerName: String, modelName: String): Button =
@@ -514,7 +527,9 @@ class ChatDetailFragment : BaseBindingFragment<FragmentChatDetailBinding>(Fragme
             }
             text = providerName.lowercase(Locale.getDefault())
             setTextColor(ContextCompat.getColor(context, R.color.md_black_1000))
-            textSize = 18f
+            maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
+            setAutoSizeTextTypeUniformWithConfiguration(12, 18, 1, TypedValue.COMPLEX_UNIT_SP)
             setTypeface(null, Typeface.BOLD)
             setPadding(16, 8, 16, 8)
             isAllCaps = false
