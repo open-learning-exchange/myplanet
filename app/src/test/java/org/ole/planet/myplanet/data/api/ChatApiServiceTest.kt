@@ -124,6 +124,35 @@ class ChatApiServiceTest {
     }
 
     @Test
+    fun fetchAiProviders_whenServerReturnsProviderArray_mapsNameToConfigured() = runTest {
+        every { UrlUtils.hostUrl } returns "https://example.com/"
+        val jsonResponse = """
+            {"providers":[
+                {"name":"openai","label":"OpenAI","configured":true},
+                {"name":"claude","label":"Claude","configured":false},
+                {"name":"perplexity","label":"Perplexity","configured":false},
+                {"name":"deepseek","label":"DeepSeek","configured":true}
+            ]}
+        """.trimIndent()
+        coEvery { apiInterface.checkAiProviders("https://example.com/checkProviders/") } returns Response.success(jsonResponse.toResponseBody("application/json".toMediaTypeOrNull()))
+
+        val result = chatApiService.fetchAiProviders()
+
+        assertEquals(mapOf("openai" to true, "claude" to false, "perplexity" to false, "deepseek" to true), result)
+    }
+
+    @Test
+    fun fetchAiProviders_whenProviderEntryIsMalformed_skipsItAndTreatsMissingConfiguredAsFalse() = runTest {
+        every { UrlUtils.hostUrl } returns "https://example.com/"
+        val jsonResponse = """{"providers":[{"label":"No name","configured":true},{"name":"gemini"},"junk"]}"""
+        coEvery { apiInterface.checkAiProviders("https://example.com/checkProviders/") } returns Response.success(jsonResponse.toResponseBody("application/json".toMediaTypeOrNull()))
+
+        val result = chatApiService.fetchAiProviders()
+
+        assertEquals(mapOf("gemini" to false), result)
+    }
+
+    @Test
     fun fetchAiProviders_whenExceptionThrown_returnsNull() = runTest {
         every { UrlUtils.hostUrl } returns "https://example.com/"
         coEvery { apiInterface.checkAiProviders("https://example.com/checkProviders/") } throws RuntimeException("Network error")
