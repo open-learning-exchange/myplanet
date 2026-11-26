@@ -1406,6 +1406,7 @@
     <string name="view_list">सूची दृश्य</string>
     <string name="steps_done_of_total">%2$d मध्ये %1$d सम्पन्न</string>
     <string name="course_steps_count">%d चरणहरू</string>
+    <string name="course_grade_number">कक्षा %s</string>
     <string name="subject_label_mathematics">गणित</string>
     <string name="subject_label_literacy">साक्षरता</string>
     <string name="subject_label_health">स्वास्थ्य</string>
