@@ -165,7 +165,7 @@ class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentV
             ImageUtils.loadPlaceholderImage(currentUser.userImage, binding.userImage, userImageSize)
             binding.txtEmail.text = StringUtils.checkNA(currentUser.email)
             binding.txtLanguage.text = StringUtils.checkNA(currentUser.language)
-            binding.txtDob.text = StringUtils.checkNA(TimeUtils.formatDateToDDMMYYYY(currentUser.dob))
+            binding.txtDob.text = StringUtils.checkNA(TimeUtils.formatBirthDate(currentUser.dob))
 
             if (healthRecord != null) {
                 val (mh, mm, list, userMap) = healthRecord
@@ -258,7 +258,7 @@ class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentV
             editHealthLauncher.launch(Intent(activity, AddHealthActivity::class.java).putExtra("userId", userId))
         }
 
-        binding.txtDob.text = if (userModel?.dob.isNullOrEmpty()) getString(R.string.birth_date) else TimeUtils.formatDateToDDMMYYYY(userModel?.dob)
+        binding.txtDob.text = if (userModel?.dob.isNullOrEmpty()) getString(R.string.birth_date) else TimeUtils.formatBirthDate(userModel?.dob)
     }
 
     private fun selectPatient() {

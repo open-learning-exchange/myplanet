@@ -352,7 +352,7 @@ class SurveysRepositoryImpl @Inject constructor(
                     ?.let { getFormattedDateWithTime(it) }
                     .orEmpty(),
                 creationDate = survey.createdDate.takeIf { it > 0 }
-                    ?.let { formatDate(it, "MMM dd, yyyy") }
+                    ?.let { formatDate(it) }
                     .orEmpty()
             )
         }

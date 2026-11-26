@@ -208,7 +208,7 @@ class MembersAdapterTest {
                 id = "user1",
                 name = "User 1"
             )
-            // March 11, 2024, 00:00:00 UTC -> "11 Mar 2024" in the short (dd MMM yyyy) format
+            // March 11, 2024, 00:00:00 UTC -> "Mar 11, 2024" in the app-wide medium date style
             val timestamp = 1710115200000L
             val list = listOf(
                 JoinedMemberData(user1, 0, timestamp, false)
@@ -222,7 +222,7 @@ class MembersAdapterTest {
 
                 // Literal expectation, not a re-call of the function under test: this fails if
                 // the adapter switches pattern or timezone (the regression the issue guards against).
-                assertTrue(viewHolder.binding.tvLastVisit.text.toString().contains("11 Mar 2024"))
+                assertTrue(viewHolder.binding.tvLastVisit.text.toString().contains("Mar 11, 2024"))
             }
         } finally {
             Locale.setDefault(originalLocale)

@@ -66,7 +66,7 @@ class TeamsTasksViewModel @Inject constructor(
 
     fun getFormattedDeadlineDate(): String {
         val currentDeadline = _deadline.value ?: Calendar.getInstance()
-        return TimeUtils.formatDateTZ(currentDeadline.timeInMillis)
+        return TimeUtils.formatDate(currentDeadline.timeInMillis)
     }
 
     fun getFormattedDeadlineWithTime(): String {

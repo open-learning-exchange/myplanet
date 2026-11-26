@@ -76,7 +76,7 @@ class MembersDetailViewModelTest {
 
         assertNotNull(stats)
         assertEquals("5", stats?.numberOfVisits)
-        assertEquals("November 14, 2023 10:13 PM", stats?.lastLogin)
+        assertEquals("Nov 14, 2023, 10:13 PM", stats?.lastLogin?.replace('\u202F', ' '))
     }
 
     @Test
@@ -110,7 +110,7 @@ class MembersDetailViewModelTest {
 
         assertNotNull(stats)
         assertNull(stats?.numberOfVisits)
-        assertEquals("November 14, 2023 10:13 PM", stats?.lastLogin)
+        assertEquals("Nov 14, 2023, 10:13 PM", stats?.lastLogin?.replace('\u202F', ' '))
     }
 
     @Test
