@@ -164,4 +164,55 @@ class ExamAnswerUtilsTest {
         every { mockQuestion105.choices } returns json105
         assertEquals("Choice 105", ExamAnswerUtils.getChoiceTextById(mockQuestion105, "105"))
     }
+
+    private val featuresQuestion = ExamQuestion(
+        id = "q3",
+        type = "selectMultiple",
+        body = "What specific features would you like to see?",
+        choices = """[{"text":"Discussion forums","id":"_forums"},{"text":"Others (please specify)","id":"_others"}]"""
+    )
+
+    private fun textQuestion(body: String, type: String = "textarea") =
+        ExamQuestion(id = "q4", type = type, body = body)
+
+    @Test
+    fun isOtherFollowUp_detectsIfOtherAfterAnOtherChoice() {
+        assertTrue(ExamAnswerUtils.isOtherFollowUp(textQuestion("If other, please specify"), featuresQuestion))
+        assertTrue(ExamAnswerUtils.isOtherFollowUp(textQuestion("**If others**, please specify", "input"), featuresQuestion))
+    }
+
+    @Test
+    fun isOtherFollowUp_acceptsBuiltInOtherOption() {
+        val previous = ExamQuestion(id = "q1", type = "select", choices = """[{"text":"Yes","id":"_y"}]""", hasOtherOption = true)
+        assertTrue(ExamAnswerUtils.isOtherFollowUp(textQuestion("If other, please specify"), previous))
+    }
+
+    @Test
+    fun isOtherFollowUp_rejectsUnrelatedQuestions() {
+        val noOther = ExamQuestion(id = "q1", type = "select", choices = """[{"text":"Yes","id":"_y"},{"text":"No","id":"_n"}]""")
+        assertFalse(ExamAnswerUtils.isOtherFollowUp(textQuestion("If other, please specify"), null))
+        assertFalse(ExamAnswerUtils.isOtherFollowUp(textQuestion("If other, please specify"), noOther))
+        assertFalse(ExamAnswerUtils.isOtherFollowUp(textQuestion("If yes, please specify"), featuresQuestion))
+        assertFalse(ExamAnswerUtils.isOtherFollowUp(textQuestion("Tell us about another idea"), featuresQuestion))
+        assertFalse(ExamAnswerUtils.isOtherFollowUp(textQuestion("If other, please specify", "select"), featuresQuestion))
+    }
+
+    @Test
+    fun isOtherChoiceSelected_matchesCheckboxTextOrId() {
+        assertTrue(ExamAnswerUtils.isOtherChoiceSelected(featuresQuestion, "", mapOf("Others (please specify)" to "_others")))
+        assertTrue(ExamAnswerUtils.isOtherChoiceSelected(featuresQuestion, "", mapOf("x" to "_others")))
+        assertFalse(ExamAnswerUtils.isOtherChoiceSelected(featuresQuestion, "", mapOf("Discussion forums" to "_forums")))
+        assertFalse(ExamAnswerUtils.isOtherChoiceSelected(featuresQuestion, "", emptyMap()))
+    }
+
+    @Test
+    fun isOtherChoiceSelected_matchesRadioIdAndBuiltInOther() {
+        val radio = ExamQuestion(id = "q1", type = "select", choices = """[{"text":"Yes","id":"_y"},{"text":"Other","id":"_o"}]""")
+        assertTrue(ExamAnswerUtils.isOtherChoiceSelected(radio, "_o", emptyMap()))
+        assertFalse(ExamAnswerUtils.isOtherChoiceSelected(radio, "_y", emptyMap()))
+
+        val builtIn = ExamQuestion(id = "q2", type = "select", choices = """[{"text":"Yes","id":"_y"}]""", hasOtherOption = true)
+        assertTrue(ExamAnswerUtils.isOtherChoiceSelected(builtIn, "other", emptyMap()))
+        assertFalse(ExamAnswerUtils.isOtherChoiceSelected(builtIn, "_y", emptyMap()))
+    }
 }
