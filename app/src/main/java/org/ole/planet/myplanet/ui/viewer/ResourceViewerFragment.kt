@@ -49,7 +49,6 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
-import androidx.media3.ui.DefaultTimeBar
 import androidx.media3.ui.PlayerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -471,12 +470,6 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
                 player.seekTo(savedProgress)
             }
             player.playWhenReady = true
-
-            val timeBar = playerView.findViewById<DefaultTimeBar>(androidx.media3.ui.R.id.exo_progress)
-            timeBar?.apply {
-                setPlayedColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
-                setScrubberColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
-            }
         }
     }
 
