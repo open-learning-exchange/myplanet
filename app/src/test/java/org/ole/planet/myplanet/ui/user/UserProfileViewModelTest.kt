@@ -52,9 +52,9 @@ class UserProfileViewModelTest {
     fun `init loads profile activity stats into state flows`() = runTest {
         advanceUntilIdle()
 
-        assertEquals("Test Resource opened 5 times", viewModel.maxOpenedResource.value)
+        assertEquals("Test Resource" to 5, viewModel.maxOpenedResource.value)
         assertEquals(123456789L, viewModel.lastVisit.value)
-        assertEquals("Resource opened 10 times.", viewModel.numberOfResourceOpen.value)
+        assertEquals(10L, viewModel.numberOfResourceOpen.value)
     }
 
     @Test

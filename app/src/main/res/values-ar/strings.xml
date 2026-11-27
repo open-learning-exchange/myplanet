@@ -661,7 +661,14 @@
     <string name="self_examination">%s\nالفحص الذاتي</string>
     <string name="pending_survey_notification">لديك استطلاع قيد الانتظار:</string>
     <string name="task_notification">%1$s مستحق في %2$s</string>
-    <string name="resource_notification">لديك %1$d موارد لم يتم تنزيلها</string>
+    <plurals name="resource_notification">
+        <item quantity="zero">موارد لم يتم تنزيلها: %d</item>
+        <item quantity="one">موارد لم يتم تنزيلها: %d</item>
+        <item quantity="two">موارد لم يتم تنزيلها: %d</item>
+        <item quantity="few">موارد لم يتم تنزيلها: %d</item>
+        <item quantity="many">موارد لم يتم تنزيلها: %d</item>
+        <item quantity="other">موارد لم يتم تنزيلها: %d</item>
+    </plurals>
 
     <string name="vitals_format">
         درجة الحرارة: %1$s\n
@@ -983,7 +990,7 @@
     <string name="social_and_web">التواصل الاجتماعي والويب</string>
     <string name="user_requested_to_join_team">%1$s قد طلب الانضمام إلى %2$s</string>
     <string name="join_request_prefix">طلب الانضمام:</string>
-    <string name="no_news">لا تتوفر أخبار</string>
+    <string name="no_news">لا توجد رسائل بعد</string>
     <string name="no_surveys">لا تتوفر استطلاعات</string>
     <string name="edit_image">تحرير صورة الملف الشخصي</string>
     <string name="compulsory_first_name">الاسم الأول مطلوب</string>
@@ -1031,7 +1038,6 @@
     <string name="course_progress">التقدم %1$s من %2$s</string>
     <string name="tag_selected">تم اختيار: %s</string>
     <string name="resources_size">الموارد [%d]</string>
-    <string name="user_role">- %s</string>
     <string name="user_name">%1$s (%2$s)</string>
     <string name="two_strings">%1$s %2$s</string>
     <string name="three_strings">%1$s %2$s %3$s</string>
@@ -1446,4 +1452,21 @@
     <string name="add_cover_image">إضافة صورة الغلاف</string>
     <string name="change_cover_image">تغيير صورة الغلاف</string>
     <string name="team_cover_image">صورة غلاف الفريق</string>
+    <plurals name="reply_count">
+        <item quantity="zero">الردود: %d</item>
+        <item quantity="one">الردود: %d</item>
+        <item quantity="two">الردود: %d</item>
+        <item quantity="few">الردود: %d</item>
+        <item quantity="many">الردود: %d</item>
+        <item quantity="other">الردود: %d</item>
+    </plurals>
+    <plurals name="most_opened_resource_value">
+        <item quantity="zero">%1$s (عدد مرات الفتح: %2$d)</item>
+        <item quantity="one">%1$s (عدد مرات الفتح: %2$d)</item>
+        <item quantity="two">%1$s (عدد مرات الفتح: %2$d)</item>
+        <item quantity="few">%1$s (عدد مرات الفتح: %2$d)</item>
+        <item quantity="many">%1$s (عدد مرات الفتح: %2$d)</item>
+        <item quantity="other">%1$s (عدد مرات الفتح: %2$d)</item>
+    </plurals>
+
 </resources>

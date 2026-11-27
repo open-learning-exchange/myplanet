@@ -111,11 +111,11 @@ class UserProfileViewModel @Inject constructor(
     private val _offlineVisits = MutableStateFlow(0)
     val offlineVisits: StateFlow<Int> = _offlineVisits.asStateFlow()
 
-    private val _numberOfResourceOpen = MutableStateFlow("")
-    val numberOfResourceOpen: StateFlow<String> = _numberOfResourceOpen.asStateFlow()
+    private val _numberOfResourceOpen = MutableStateFlow(0L)
+    val numberOfResourceOpen: StateFlow<Long> = _numberOfResourceOpen.asStateFlow()
 
-    private val _maxOpenedResource = MutableStateFlow("")
-    val maxOpenedResource: StateFlow<String> = _maxOpenedResource.asStateFlow()
+    private val _maxOpenedResource = MutableStateFlow<Pair<String, Int>?>(null)
+    val maxOpenedResource: StateFlow<Pair<String, Int>?> = _maxOpenedResource.asStateFlow()
 
     private val _connectedCommunityCode = MutableStateFlow("")
     val connectedCommunityCode: StateFlow<String> = _connectedCommunityCode.asStateFlow()
@@ -124,11 +124,9 @@ class UserProfileViewModel @Inject constructor(
         viewModelScope.launch {
             val fullName = userRepository.getUserModel()?.name ?: ""
             val stats = activitiesRepository.getProfileActivityStats(fullName)
-            val result = stats.mostOpenedResource
-            _maxOpenedResource.value = if (result == null) "" else "${result.first} opened ${result.second} times"
+            _maxOpenedResource.value = stats.mostOpenedResource
             _lastVisit.value = stats.lastVisit
-            val count = stats.resourceOpenCount
-            _numberOfResourceOpen.value = if (count == 0L) "" else "Resource opened $count times."
+            _numberOfResourceOpen.value = stats.resourceOpenCount
             _connectedCommunityCode.value = userRepository.getConnectedCommunityCode()
         }
     }

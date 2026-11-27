@@ -750,7 +750,7 @@ class VoicesAdapter(
     }
 
     private fun applyReplyCount(binding: RowNewsBinding, replyCount: Int, position: Int) {
-        binding.btnShowReply.text = context.getString(R.string.reply_count_format, replyCount)
+        binding.btnShowReply.text = context.resources.getQuantityString(R.plurals.reply_count, replyCount, replyCount)
         binding.btnShowReply.setTextColor(context.getColor(R.color.daynight_textColor))
         val visible = replyCount > 0 && !(position == 0 && parentNews != null) && canReply()
         binding.btnShowReply.visibility = if (visible) View.VISIBLE else View.GONE

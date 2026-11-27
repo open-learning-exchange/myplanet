@@ -21,6 +21,7 @@ import com.bumptech.glide.signature.ObjectKey
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
 import dagger.hilt.android.AndroidEntryPoint
+import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -114,8 +115,9 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
             }
             ImageUtils.loadProfileImage(model?.userImage, imageView, 200)
 
-            v.findViewById<TextView>(R.id.txtRole).text =
-                getString(R.string.user_role, model?.getRoleAsString())
+            v.findViewById<TextView>(R.id.txtRole).text = model?.getRoleAsString().orEmpty()
+                .split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                .joinToString(", ") { role -> role.replaceFirstChar { it.titlecase(Locale.getDefault()) } }
         }
     }
 

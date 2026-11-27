@@ -143,7 +143,7 @@
     <string name="edit_post">Edit Post</string>
     <string name="delete_post">Delete post</string>
     <string name="notifications">Notifications</string>
-    <string name="get_started">GET STARTED</string>
+    <string name="get_started">Get Started</string>
     <string name="year">Year</string>
     <string name="publisher">Publisher</string>
     <string name="link_to_license">Link to license</string>
@@ -168,7 +168,6 @@
     <string name="https_protocol">https://</string>
     <string name="http_protocol">http://</string>
     <string name="showing_reply_of">Showing reply of:</string>
-    <string name="reply_count_format" translatable="false">(%1$d)</string>
     <string name="open_date">Open Date</string>
     <string name="my_survey">mySurveys</string>
     <string name="failed_to_load_course">Failed to load course</string>
@@ -587,7 +586,7 @@
     <string name="send_survey_to">Send Survey to:</string>
     <string name="send_survey">Send Survey</string>
     <string name="previous">Previous</string>
-    <string name="next">next</string>
+    <string name="next">Next</string>
     <string name="submit_answer">Submit Answer</string>
     <string name="all_task">All Task</string>
     <string name="my_task">My task</string>
@@ -683,7 +682,10 @@
     <string name="self_examination">%s\nSelf Examination</string>
     <string name="pending_survey_notification">you have a pending survey:</string>
     <string name="task_notification">%1$s is due in %2$s</string>
-    <string name="resource_notification">You have %1$d resources not downloaded</string>
+    <plurals name="resource_notification">
+        <item quantity="one">You have %d resource not downloaded</item>
+        <item quantity="other">You have %d resources not downloaded</item>
+    </plurals>
 
     <string name="vitals_format">
         Temperature: %1$s\n
@@ -1005,7 +1007,7 @@
     <string name="social_and_web">Social &amp; Web</string>
     <string name="user_requested_to_join_team">%1$s has requested to join %2$s</string>
     <string name="join_request_prefix">Join Request:</string>
-    <string name="no_news">news not available</string>
+    <string name="no_news">No messages yet</string>
     <string name="no_surveys">surveys not available</string>
     <string name="edit_image">edit profile image</string>
     <string name="compulsory_first_name">first name required</string>
@@ -1051,7 +1053,6 @@
     <string name="course_progress">Progress %1$s of %2$s</string>
     <string name="tag_selected">Selected: %s</string>
     <string name="resources_size">Resources [%d]</string>
-    <string name="user_role">- %s</string>
     <string name="user_name">%1$s (%2$s)</string>
     <string name="two_strings">%1$s %2$s</string>
     <string name="three_strings">%1$s %2$s %3$s</string>
@@ -1142,7 +1143,7 @@
     <string name="most_opened_resource">Most Opened Resource : </string>
     <string name="number_of_resources_opened">Number of Resources Opened : </string>
     <string name="kindly_enter_reply_message">Kindly enter reply message</string>
-    <string name="start">start</string>
+    <string name="start">Start</string>
     <string name="continuation">continue</string>
     <string name="please_complete_survey">please complete the survey to finish the course</string>
     <string name="export_cancelled">export cancelled.</string>
@@ -1453,4 +1454,13 @@
     <string name="add_cover_image">Add Cover Image</string>
     <string name="change_cover_image">Change Cover Image</string>
     <string name="team_cover_image">Team cover image</string>
+    <plurals name="reply_count">
+        <item quantity="one">%d reply</item>
+        <item quantity="other">%d replies</item>
+    </plurals>
+    <plurals name="most_opened_resource_value">
+        <item quantity="one">%1$s (opened %2$d time)</item>
+        <item quantity="other">%1$s (opened %2$d times)</item>
+    </plurals>
+
 </resources>
