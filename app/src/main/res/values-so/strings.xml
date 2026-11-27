@@ -366,6 +366,8 @@
         <item>Ururinta Tariikhda - Asc</item>
         <item>Ururinta Cinwaanka - Asc</item>
         <item>Ururinta Cinwaanka - Desc</item>
+        <item>Kala sooc Dhamaystirka - Aan Dhammaystirmin Marka Hore</item>
+        <item>Kala sooc Dhamaystirka - Dhammaystiran Marka Hore</item>
     </string-array>
 
     <string-array name="sort_member">

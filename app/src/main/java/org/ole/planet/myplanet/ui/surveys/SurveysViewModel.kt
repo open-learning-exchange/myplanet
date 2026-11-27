@@ -40,7 +40,7 @@ class SurveysViewModel @Inject constructor(
 ) : ViewModel() {
 
     enum class SortOption {
-        DATE_ASC, DATE_DESC, TITLE_ASC, TITLE_DESC
+        DATE_ASC, DATE_DESC, TITLE_ASC, TITLE_DESC, INCOMPLETE_FIRST, COMPLETE_FIRST
     }
 
     private var rawSurveys: List<StepExam> = emptyList()
@@ -187,8 +187,9 @@ class SurveysViewModel @Inject constructor(
         filterSortJob?.cancel()
         filterSortJob = viewModelScope.launch {
             val currentRawSurveys = rawSurveys
+            val bindingData = _bindingData.value
             val list = withContext(dispatcherProvider.default) {
-                var filteredList = if (currentSearchQuery.isNotEmpty()) {
+                val filteredList = if (currentSearchQuery.isNotEmpty()) {
                     filter(currentSearchQuery, currentRawSurveys)
                 } else {
                     currentRawSurveys
@@ -199,6 +200,12 @@ class SurveysViewModel @Inject constructor(
                     SortOption.DATE_ASC -> filteredList.sortedBy { getSortDate(it) }
                     SortOption.TITLE_ASC -> filteredList.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name ?: "" })
                     SortOption.TITLE_DESC -> filteredList.sortedWith(compareByDescending(String.CASE_INSENSITIVE_ORDER) { it.name ?: "" })
+                    SortOption.INCOMPLETE_FIRST -> filteredList.sortedBy { survey ->
+                        if (bindingData[survey.id]?.teamSubmission?.status == "complete") 1 else 0
+                    }
+                    SortOption.COMPLETE_FIRST -> filteredList.sortedBy { survey ->
+                        if (bindingData[survey.id]?.teamSubmission?.status == "complete") 0 else 1
+                    }
                 }
             }
             if (rawSurveys === currentRawSurveys) {

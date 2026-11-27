@@ -162,6 +162,8 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener 
                     1 -> viewModel.sort(SurveysViewModel.SortOption.DATE_ASC)
                     2 -> viewModel.sort(SurveysViewModel.SortOption.TITLE_ASC)
                     3 -> viewModel.sort(SurveysViewModel.SortOption.TITLE_DESC)
+                    4 -> viewModel.sort(SurveysViewModel.SortOption.INCOMPLETE_FIRST)
+                    5 -> viewModel.sort(SurveysViewModel.SortOption.COMPLETE_FIRST)
                 }
                 recyclerView.scrollToPosition(0)
             }
