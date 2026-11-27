@@ -614,7 +614,6 @@
     <string name="all_files_downloaded_successfully">All files downloaded successfully</string>
     <string name="removed_from_mylibrary">Removed from myLibrary</string>
     <string name="removed_from_mycourse">Removed from myCourse</string>
-    <string name="please_allow_usages_permission_to_myplanet_app">Please allow usages permission to myPlanet app.</string>
     <string name="title_is_required">Title is required</string>
     <string name="no_data_available">No data available</string>
     <string name="are_you_sure_you_want_to_leave_these_courses">Are you sure you want to leave these courses?</string>
@@ -1453,4 +1452,9 @@
     <string name="add_cover_image">Add Cover Image</string>
     <string name="change_cover_image">Change Cover Image</string>
     <string name="team_cover_image">Team cover image</string>
+    <string name="usage_access_title">Allow usage access</string>
+    <string name="usage_access_message">myPlanet reports how much time it is used on this device to your community\'s Planet, so your community can see how the app is used. Android calls this \"Usage access\". On the next screen, find myPlanet and turn it on.</string>
+    <string name="open_settings">Open settings</string>
+    <string name="not_now">Not now</string>
+
 </resources>

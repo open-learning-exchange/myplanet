@@ -594,7 +594,6 @@
     <string name="all_files_downloaded_successfully">Dhammaan faylashu waa la degsanayaa si guul ah.</string>
     <string name="removed_from_mylibrary">Ka tirtiray Maktabaddayda</string>
     <string name="removed_from_mycourse">Ka tirtiray kursiga kayga</string>
-    <string name="please_allow_usages_permission_to_myplanet_app">Fadlan ogow xidhiidhka adeegga myPlanet.</string>
     <string name="title_is_required">Magaca waa loo baahan yahay</string>
     <string name="no_data_available">Wax macluumaad ah ayaa lama helin</string>
     <string name="are_you_sure_you_want_to_leave_these_courses">Ma hubtaa inaad ka baxdo ka dhamaan kursiyadaan?</string>
@@ -1430,4 +1429,9 @@
     <string name="add_cover_image">Ku dar sawirka daboolka</string>
     <string name="change_cover_image">Beddel sawirka daboolka</string>
     <string name="team_cover_image">Sawirka daboolka kooxda</string>
+    <string name="usage_access_title">Oggolow helitaanka isticmaalka</string>
+    <string name="usage_access_message">myPlanet waxay u sheegtaa Planet-ka bulshadaada inta waqti ee lagu isticmaalo qalabkan, si bulshadaadu u aragto sida abka loo isticmaalo. Android waxay tan ugu yeedhaa \"Helitaanka isticmaalka\". Shaashadda xigta, ka hel myPlanet oo shid.</string>
+    <string name="open_settings">Fur dejinta</string>
+    <string name="not_now">Hadda maya</string>
+
 </resources>

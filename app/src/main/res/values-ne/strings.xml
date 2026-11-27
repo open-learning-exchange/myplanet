@@ -594,7 +594,6 @@
     <string name="all_files_downloaded_successfully">सबै फाइलहरू सफलतापूर्वक डाउनलोड भयो</string>
     <string name="removed_from_mylibrary">मेरो पुस्तकालयबाट हटाइयो</string>
     <string name="removed_from_mycourse">मेरो पाठ्यक्रमबाट हटाइयो</string>
-    <string name="please_allow_usages_permission_to_myplanet_app">कृपया myPlanet अनुप्रयोगमा प्रयोगको अनुमति दिनुहोस्।</string>
     <string name="title_is_required">शीर्षक आवश्यक छ</string>
     <string name="no_data_available">कुनै डाटा उपलब्ध छैन</string>
     <string name="are_you_sure_you_want_to_leave_these_courses">के तपाइँ निश्चित हुनुहुन्छ तपाइँ यी पाठ्यक्रमहरू हटाउन चाहनुहुन्छ?</string>
@@ -1430,4 +1429,9 @@
     <string name="add_cover_image">कभर तस्बिर थप्नुहोस्</string>
     <string name="change_cover_image">कभर तस्बिर परिवर्तन गर्नुहोस्</string>
     <string name="team_cover_image">टोलीको कभर तस्बिर</string>
+    <string name="usage_access_title">प्रयोग पहुँचको अनुमति दिनुहोस्</string>
+    <string name="usage_access_message">myPlanet ले यो उपकरणमा कति समय प्रयोग भयो भनेर तपाईंको समुदायको Planet लाई जानकारी दिन्छ, ताकि तपाईंको समुदायले एप कसरी प्रयोग भइरहेको छ भनेर हेर्न सकोस्। Android ले यसलाई \"प्रयोग पहुँच\" भन्छ। अर्को स्क्रिनमा myPlanet खोजेर सक्रिय गर्नुहोस्।</string>
+    <string name="open_settings">सेटिङ खोल्नुहोस्</string>
+    <string name="not_now">अहिले होइन</string>
+
 </resources>
