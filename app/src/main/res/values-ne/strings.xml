@@ -791,6 +791,10 @@
     <string name="audio_file_saved_in_database">अडियो फाईल डाटाबेसमा सुरक्षित गरियो।</string>
     <string name="connection_failed_reason">"सम्पर्क विफल भयो: कारण "</string>
     <string name="are_you_sure">के तपाईं निश्चित हुनुहुन्छ?</string>
+    <string name="discard_changes_title">परिवर्तनहरू खारेज गर्ने?</string>
+    <string name="discard_changes_message">तपाईंका सुरक्षित नगरिएका परिवर्तनहरू हराउनेछन्।</string>
+    <string name="discard">खारेज गर्नुहोस्</string>
+    <string name="keep_editing">सम्पादन जारी राख्नुहोस्</string>
     <string name="data_cleared">डाटा हटाइयो</string>
     <string name="are_you_sure_want_to_delete_all_the_files">के तपाईं सबै फाइलहरू हटाउन चाहनुहुन्छ?</string>
     <string name="unable_to_clear_files">फाइलहरू हटाउन सकिएन</string>
