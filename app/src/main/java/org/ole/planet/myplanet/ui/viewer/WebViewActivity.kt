@@ -139,12 +139,10 @@ class WebViewActivity : AppCompatActivity() {
             displayZoomControls = false
             
             // Disable geolocation
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+            if Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
                 setGeolocationEnabled(false)
             }
 
-            // HTML resources bring their own colours; darkening them makes text unreadable
-            // (e.g. white text on light buttons), so only the viewer chrome follows dark mode.
             if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
                 WebSettingsCompat.setAlgorithmicDarkeningAllowed(this, false)
             } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
