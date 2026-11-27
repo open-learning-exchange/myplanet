@@ -17,6 +17,7 @@ dependencyResolutionManagement {
     }
 }
 include ':app'
+include ':baselineprofile'
 
 def localProps = new Properties()
 def localPropsFile = file('local.properties')

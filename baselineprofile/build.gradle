@@ -1,0 +1,45 @@
+plugins {
+    // AGP 9 provides built-in Kotlin support, so no separate kotlin-android plugin is applied.
+    alias(libs.plugins.androidx.test)
+    alias(libs.plugins.androidx.baselineprofile)
+}
+
+android {
+    namespace = 'org.ole.planet.myplanet.baselineprofile'
+    compileSdk = 37
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    defaultConfig {
+        // Baseline profile generation requires API 28+.
+        minSdk = 28
+        targetSdk = 36
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    // The module under test.
+    targetProjectPath = ":app"
+
+    // Mirror the app's product flavors so a profile can be generated per flavor
+    // (generateDefaultBaselineProfile / generateLiteBaselineProfile).
+    flavorDimensions "mode"
+    productFlavors {
+        create("default") { dimension "mode" }
+        create("lite") { dimension "mode" }
+    }
+}
+
+// Generate using a connected device/emulator (userdebug/rooted emulator recommended).
+baselineProfile {
+    useConnectedDevices = true
+}
+
+dependencies {
+    implementation(libs.test.ext)
+    implementation(libs.test.runner)
+    implementation(libs.uiautomator)
+    implementation(libs.benchmark.macro.junit4)
+}
