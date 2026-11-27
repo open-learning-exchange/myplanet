@@ -13,9 +13,17 @@ class CourseSelectionController(
     private val isGuest: Boolean,
     private val onRemoveConfirmed: () -> Unit,
     private val onArchiveConfirmed: () -> Unit,
+    private val onUnarchiveConfirmed: () -> Unit,
     private val onAddToLib: () -> Unit,
     private val onSelectAllToggled: (checked: Boolean) -> Unit
 ) {
+    private lateinit var btnUnarchive: Button
+    var isArchivedView: Boolean = false
+        set(value) {
+            if (field == value) return
+            field = value
+            if (::btnArchive.isInitialized) refreshActionVisibility()
+        }
     lateinit var selectAll: CheckBox
         private set
     private lateinit var tvAddToLib: TextView
@@ -29,11 +37,13 @@ class CourseSelectionController(
         tvAddToLib = rootView.findViewById(R.id.tv_add)
         btnRemove = rootView.findViewById(R.id.btn_remove)
         btnArchive = rootView.findViewById(R.id.btn_archive)
+        btnUnarchive = rootView.findViewById(R.id.btn_unarchive)
 
         if (isGuest) {
             tvAddToLib.visibility = View.GONE
             btnRemove.visibility = View.GONE
             btnArchive.visibility = View.GONE
+            btnUnarchive.visibility = View.GONE
             selectAll.visibility = View.GONE
             return
         }
@@ -45,6 +55,14 @@ class CourseSelectionController(
                 if (currentSelectedCount == 1) R.string.are_you_sure_you_want_to_leave_this_course
                 else R.string.are_you_sure_you_want_to_leave_these_courses,
                 onRemoveConfirmed
+            )
+        }
+
+        btnUnarchive.setOnClickListener {
+            showConfirmDialog(
+                if (currentSelectedCount == 1) R.string.are_you_sure_you_want_to_unarchive_this_course
+                else R.string.are_you_sure_you_want_to_unarchive_these_courses,
+                onUnarchiveConfirmed
             )
         }
 
@@ -69,6 +87,7 @@ class CourseSelectionController(
         currentSelectedCount = selectedCount
         val hasSelection = selectedCount > 0
         btnArchive.isEnabled = hasSelection
+        btnUnarchive.isEnabled = hasSelection
         btnRemove.isEnabled = hasSelection
         tvAddToLib.isEnabled = hasSelection
         refreshActionVisibility()
@@ -81,6 +100,7 @@ class CourseSelectionController(
             tvAddToLib.visibility = View.GONE
             btnRemove.visibility = View.GONE
             btnArchive.visibility = View.GONE
+            btnUnarchive.visibility = View.GONE
         } else {
             selectAll.visibility = View.VISIBLE
         }
@@ -102,17 +122,21 @@ class CourseSelectionController(
         if (currentSelectedCount > 0) {
             if (isMyCourseLib) {
                 btnRemove.visibility = View.VISIBLE
-                btnArchive.visibility = View.VISIBLE
+                if (isArchivedView) {
+                    btnUnarchive.visibility = View.VISIBLE
+                    btnArchive.visibility = View.GONE
+                } else {
+                    btnArchive.visibility = View.VISIBLE
+                    btnUnarchive.visibility = View.GONE
+                }
             } else {
                 tvAddToLib.visibility = View.VISIBLE
             }
         } else {
-            if (isMyCourseLib) {
-                btnRemove.visibility = View.GONE
-                btnArchive.visibility = View.GONE
-            } else {
-                tvAddToLib.visibility = View.GONE
-            }
+            btnRemove.visibility = View.GONE
+            btnArchive.visibility = View.GONE
+            btnUnarchive.visibility = View.GONE
+            tvAddToLib.visibility = View.GONE
         }
     }
 

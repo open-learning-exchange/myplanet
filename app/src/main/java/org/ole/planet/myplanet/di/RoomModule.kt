@@ -59,7 +59,7 @@ object RoomModule {
             // Drop-and-resync migration strategy: on any schema change the local Room store is
             // rebuilt and repopulated from the server. Index-only changes get a small in-place
             // migration instead, so they don't wipe rows that haven't been uploaded yet.
-            .addMigrations(AppDatabase.MIGRATION_20_21)
+            .addMigrations(AppDatabase.MIGRATION_20_21, AppDatabase.MIGRATION_21_22)
             .fallbackToDestructiveMigration(true)
             .addCallback(DatabaseResetSyncCheckpointCallback(context))
             .build()

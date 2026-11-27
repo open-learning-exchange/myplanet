@@ -22,10 +22,11 @@ data class FilterState(
     val subject: String,
     val tagNames: List<String>,
     val progressFilter: String = "",
-    val tags: List<TagEntity> = emptyList()
+    val tags: List<TagEntity> = emptyList(),
+    val showArchived: Boolean = false
 ) {
     val isActive: Boolean
-        get() = searchText.isNotEmpty() || grade.isNotEmpty() || subject.isNotEmpty() || tagNames.isNotEmpty() || progressFilter.isNotEmpty()
+        get() = searchText.isNotEmpty() || grade.isNotEmpty() || subject.isNotEmpty() || tagNames.isNotEmpty() || progressFilter.isNotEmpty() || showArchived
 }
 
 class CourseFilterController(
@@ -46,6 +47,7 @@ class CourseFilterController(
     private var subject: String = ""
     val searchTags: MutableList<TagEntity> = ArrayList()
     private var searchTextWatcher: TextWatcher? = null
+    private var showArchived: Boolean = false
     private var searchJob: Job? = null
 
     fun setup() {
@@ -59,6 +61,15 @@ class CourseFilterController(
 
     fun setProgressFilter(value: String) {
         progressFilter = value
+        _filterState.value = currentState()
+        onScrollToTop()
+    }
+
+    fun currentShowArchived(): Boolean = showArchived
+
+    fun setShowArchived(value: Boolean) {
+        if (showArchived == value) return
+        showArchived = value
         _filterState.value = currentState()
         onScrollToTop()
     }
@@ -79,6 +90,7 @@ class CourseFilterController(
         subject = state.subject
         restoreTags(state.tags, state.tagNames)
         progressFilter = state.progressFilter
+        showArchived = state.showArchived
         if (::tvSelected.isInitialized) {
             refreshTagText()
         }
@@ -155,6 +167,7 @@ class CourseFilterController(
         grade = ""
         subject = ""
         progressFilter = ""
+        showArchived = false
         _filterState.value = currentState()
         onScrollToTop()
     }
@@ -168,7 +181,8 @@ class CourseFilterController(
             subject = subject,
             tagNames = searchTags.mapNotNull { it.name },
             progressFilter = progressFilter,
-            tags = searchTags.toList()
+            tags = searchTags.toList(),
+            showArchived = showArchived
         )
     }
 

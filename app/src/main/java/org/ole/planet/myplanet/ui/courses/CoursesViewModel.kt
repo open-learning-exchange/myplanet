@@ -116,7 +116,10 @@ class CoursesViewModel @Inject constructor(
             val newState = withContext(dispatcherProvider.io) {
                 try {
                     val allCourses = coursesRepository.getAllCourses()
-                    val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
+                    val showArchived = currentFilterState.showArchived
+                    val validCourses = allCourses.filter {
+                        !it.courseTitle.isNullOrBlank() && it.isArchived == showArchived
+                    }
 
                     val myCourses = if (isMyCourseLib) {
                         coursesRepository.getMyCourses(userId, validCourses)
@@ -163,9 +166,10 @@ class CoursesViewModel @Inject constructor(
         selectedSubject: String,
         tagNames: List<String>,
         progressFilter: String = "",
-        tags: List<TagEntity> = emptyList()
+        tags: List<TagEntity> = emptyList(),
+        showArchived: Boolean = false
     ) {
-        val filterState = FilterState(searchText, selectedGrade, selectedSubject, tagNames, progressFilter, tags)
+        val filterState = FilterState(searchText, selectedGrade, selectedSubject, tagNames, progressFilter, tags, showArchived)
         currentFilterState = filterState
         
         filterJob?.cancel()
@@ -194,7 +198,7 @@ class CoursesViewModel @Inject constructor(
     ): CoursesUiState {
         val filteredCourses = coursesRepository.filterCourses(
             filterState.searchText, filterState.grade, filterState.subject, filterState.tagNames
-        )
+        ).filter { it.isArchived == filterState.showArchived }
         val myCourses = coursesRepository.getMyCourses(userId, filteredCourses)
         val baseCourses = if (isMyCourseLib) myCourses else filteredCourses
         val progressFilteredCourses = applyProgressFilter(baseCourses, progressMap, filterState.progressFilter)
@@ -236,6 +240,16 @@ class CoursesViewModel @Inject constructor(
                 if (deleteProgress) {
                     coursesRepository.deleteCoursesProgress(courseIds)
                 }
+            }
+            onComplete()
+        }
+    }
+
+    fun setCoursesArchived(courseIds: List<String>, archived: Boolean, onComplete: () -> Unit) {
+        if (courseIds.isEmpty()) return
+        viewModelScope.launch {
+            withContext(dispatcherProvider.io) {
+                coursesRepository.setCoursesArchived(courseIds, archived)
             }
             onComplete()
         }

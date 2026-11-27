@@ -32,7 +32,8 @@ open class MyCourse(
     var gradeLevel: String? = null,
     var subjectLevel: String? = null,
     var createdDate: Long = 0,
-    var coverFileName: String? = null
+    var coverFileName: String? = null,
+    @ColumnInfo(defaultValue = "0") var isArchived: Boolean = false
 ) {
     @Ignore
     private var numberOfSteps: Int? = null
@@ -47,7 +48,7 @@ open class MyCourse(
         languageOfInstruction = languageOfInstruction, courseTitle = courseTitle,
         courseTitleNormal = courseTitleNormal, memberLimit = memberLimit, description = description,
         method = method, gradeLevel = gradeLevel, subjectLevel = subjectLevel,
-        createdDate = createdDate, coverFileName = coverFileName
+        createdDate = createdDate, coverFileName = coverFileName, isArchived = isArchived
     ).also {
         it.setNumberOfSteps(getNumberOfSteps())
         it.courseSteps = courseSteps

@@ -169,13 +169,25 @@ abstract class AppDatabase : RoomDatabase() {
         // Bump this on any schema change. Without a matching in-place Migration ending here,
         // RoomModule falls back to drop-and-resync. When adding one, end it at VERSION and
         // update the guard in AppDatabaseMigrationTest.
-        const val VERSION = 21
+        const val VERSION = 22
 
         val MIGRATION_20_21 = object : Migration(20, 21) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_my_library_courseId` ON `my_library` (`courseId`)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_my_library_stepId` ON `my_library` (`stepId`)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_my_library_resourceLocalAddress` ON `my_library` (`resourceLocalAddress`)")
+            }
+        }
+
+        val MIGRATION_21_22 = object : Migration(21, 22) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                val hasColumn = db.query("PRAGMA table_info(`courses`)").use { c ->
+                    val nameIndex = c.getColumnIndex("name")
+                    generateSequence { if (c.moveToNext()) c.getString(nameIndex) else null }.any { it == "isArchived" }
+                }
+                if (!hasColumn) {
+                    db.execSQL("ALTER TABLE `courses` ADD COLUMN `isArchived` INTEGER NOT NULL DEFAULT 0")
+                }
             }
         }
     }

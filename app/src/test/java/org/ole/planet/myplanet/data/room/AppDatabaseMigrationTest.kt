@@ -9,6 +9,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyLibrary
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
@@ -27,14 +28,15 @@ class AppDatabaseMigrationTest {
     }
 
     private fun build() = Room.databaseBuilder(context, AppDatabase::class.java, dbName)
-        .addMigrations(AppDatabase.MIGRATION_20_21)
+        .addMigrations(AppDatabase.MIGRATION_20_21, AppDatabase.MIGRATION_21_22)
         .fallbackToDestructiveMigration(true)
         .allowMainThreadQueries()
         .build()
 
     @Test
-    fun `in-place migration ends at the current database version`() {
-        assertEquals(AppDatabase.VERSION, AppDatabase.MIGRATION_20_21.endVersion)
+    fun `in-place migration chain ends at the current database version`() {
+        assertEquals(AppDatabase.MIGRATION_20_21.endVersion, AppDatabase.MIGRATION_21_22.startVersion)
+        assertEquals(AppDatabase.VERSION, AppDatabase.MIGRATION_21_22.endVersion)
     }
 
     @Test
@@ -63,5 +65,27 @@ class AppDatabaseMigrationTest {
             "index_my_library_stepId",
             "index_my_library_resourceLocalAddress"
         )))
+    }
+
+    @Test
+    fun `upgrading from 21 adds the courses isArchived column and keeps rows`() = runBlocking {
+        build().apply {
+            courseDao().upsert(MyCourse(id = "c1", courseId = "c1", courseTitle = "Kept"))
+            close()
+        }
+        SQLiteDatabase.openDatabase(context.getDatabasePath(dbName).path, null, SQLiteDatabase.OPEN_READWRITE).use { raw ->
+            raw.execSQL("ALTER TABLE `courses` DROP COLUMN `isArchived`")
+            raw.version = 21
+        }
+
+        val db = build()
+        val course = db.courseDao().getByCourseId("c1")
+        db.courseDao().setArchived(listOf("c1"), true)
+        val archived = db.courseDao().getByCourseId("c1")?.isArchived
+        db.close()
+
+        assertEquals("Kept", course?.courseTitle)
+        assertEquals(false, course?.isArchived)
+        assertEquals(true, archived)
     }
 }

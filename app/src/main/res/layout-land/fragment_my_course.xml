@@ -103,6 +103,20 @@
                     android:visibility="gone"
                     app:drawableLeftCompat="@drawable/ic_delete"
                     app:drawableTint="@color/daynight_textColor" />
+                <Button
+                    android:id="@+id/btn_unarchive"
+                    android:layout_width="95dp"
+                    android:layout_height="35dp"
+                    android:layout_gravity="center"
+                    android:layout_margin="@dimen/_10dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:gravity="start|center_vertical"
+                    android:text="@string/unarchive"
+                    android:textColor="@color/daynight_textColor"
+                    android:textSize="13sp"
+                    android:visibility="gone"
+                    app:drawableLeftCompat="@drawable/ic_add_library"
+                    app:drawableTint="@color/daynight_textColor" />
             </LinearLayout>
         </LinearLayout>
 

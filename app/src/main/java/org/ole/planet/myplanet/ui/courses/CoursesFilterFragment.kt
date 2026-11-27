@@ -24,20 +24,23 @@ interface CoursesFilterSheetListener {
     val resultCount: Flow<Int>
     fun onClearRequested()
     fun onCollectionsRequested()
+    fun onShowArchivedChanged(showArchived: Boolean) {}
 }
 
 class CoursesFilterFragment : BaseBindingBottomSheetFragment<FragmentCoursesFilterBinding>(FragmentCoursesFilterBinding::inflate) {
     private var listener: CoursesFilterSheetListener? = null
     private var initialGrade: String = ""
     private var initialSubject: String = ""
+    private var initialShowArchived: Boolean = false
 
     fun setListener(listener: CoursesFilterSheetListener) {
         this.listener = listener
     }
 
-    fun setInitialSelection(grade: String, subject: String) {
+    fun setInitialSelection(grade: String, subject: String, showArchived: Boolean = false) {
         initialGrade = grade
         initialSubject = subject
+        initialShowArchived = showArchived
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
@@ -82,6 +85,10 @@ class CoursesFilterFragment : BaseBindingBottomSheetFragment<FragmentCoursesFilt
         }
         binding.spnGrade.onItemSelectedListener = spinnerListener
         binding.spnSubject.onItemSelectedListener = spinnerListener
+        binding.chkArchived.isChecked = initialShowArchived
+        binding.chkArchived.setOnCheckedChangeListener { _, isChecked ->
+            listener?.onShowArchivedChanged(isChecked)
+        }
 
         collectWhenStarted(currentListener.resultCount) { count ->
             binding.btnConfirmFilters.text = getString(R.string.show_n_results, count)

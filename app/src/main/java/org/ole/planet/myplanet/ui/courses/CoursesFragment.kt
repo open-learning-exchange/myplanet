@@ -233,6 +233,9 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         collectLatestWhenStarted(filterController.filterState) { state ->
             chipRow?.let { renderCourseChipSelection(it) }
             updateFilterBadge(state)
+            if (::selectionController.isInitialized) {
+                selectionController.isArchivedView = state.showArchived
+            }
 
             if (isFirstEmission) {
                 isFirstEmission = false
@@ -249,7 +252,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
             lastState = state
             viewModel.filterCourses(
                 isMyCourseLib, model?.id, state.searchText, state.grade,
-                state.subject, state.tagNames, state.progressFilter, state.tags
+                state.subject, state.tagNames, state.progressFilter, state.tags, state.showArchived
             )
         }
 
@@ -267,11 +270,11 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
             },
             onArchiveConfirmed = {
                 val courseIds = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
-                deleteSelected(true)
-                selectionController.clearAll(adapterCourses)
-                adapterCourses.removeCourses(courseIds) {
-                    checkList()
-                }
+                setSelectedArchived(courseIds, archived = true)
+            },
+            onUnarchiveConfirmed = {
+                val courseIds = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
+                setSelectedArchived(courseIds, archived = false)
             },
             onAddToLib = {
                 if (!selectedItems.isNullOrEmpty()) {
@@ -285,6 +288,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
                 }
             }
         )
+        selectionController.isArchivedView = filterController.currentShowArchived()
         selectionController.setup()
         checkList()
     }
@@ -293,7 +297,8 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         val badge = view?.findViewById<TextView>(R.id.tv_capsule_filter_badge) ?: return
         val count = state.tagNames.size +
             (if (state.grade.isNotEmpty()) 1 else 0) +
-            (if (state.subject.isNotEmpty()) 1 else 0)
+            (if (state.subject.isNotEmpty()) 1 else 0) +
+            (if (state.showArchived) 1 else 0)
         if (count > 0) {
             badge.text = count.toString()
             badge.visibility = View.VISIBLE
@@ -360,7 +365,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
     private fun showFilterSheet() {
         if (!::filterController.isInitialized) return
         val f = CoursesFilterFragment()
-        f.setInitialSelection(filterController.currentGrade(), filterController.currentSubject())
+        f.setInitialSelection(filterController.currentGrade(), filterController.currentSubject(), filterController.currentShowArchived())
         f.setListener(object : CoursesFilterSheetListener {
             override fun onGradeSubjectChanged(grade: String, subject: String) {
                 filterController.setGradeSubject(grade, subject)
@@ -375,6 +380,10 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
 
             override fun onCollectionsRequested() {
                 openCollectionsFragment()
+            }
+
+            override fun onShowArchivedChanged(showArchived: Boolean) {
+                filterController.setShowArchived(showArchived)
             }
         })
         f.show(childFragmentManager, "courses_filter")
@@ -531,8 +540,9 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
     }
 
     private fun saveSearchActivity() {
-        if (!::filterController.isInitialized || !filterController.filterApplied()) return
+        if (!::filterController.isInitialized) return
         val state = filterController.currentState()
+        if (!state.copy(showArchived = false).isActive) return
         val tags = filterController.searchTags.toList()
         lifecycleScope.launch {
             coursesRepository.saveSearchActivity(
@@ -550,6 +560,19 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
     override fun onResume() {
         super.onResume()
         viewModeController?.refreshSpanOnResume()
+    }
+
+    private fun setSelectedArchived(courseIds: List<String>, archived: Boolean) {
+        if (courseIds.isEmpty()) return
+        viewModel.setCoursesArchived(courseIds, archived) {
+            if (!isAdded) return@setCoursesArchived
+            selectedItems?.clear()
+            selectionController.clearAll(adapterCourses)
+            adapterCourses.removeCourses(courseIds) {
+                checkList()
+            }
+            Utilities.toast(activity, getString(if (archived) R.string.course_archived else R.string.course_restored))
+        }
     }
 
     override fun onPause() {
@@ -586,7 +609,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         }
         if (::filterController.isInitialized) {
             val state = filterController.currentState()
-            viewModel.filterCourses(isMyCourseLib, model?.id, state.searchText, state.grade, state.subject, state.tagNames, state.progressFilter, state.tags)
+            viewModel.filterCourses(isMyCourseLib, model?.id, state.searchText, state.grade, state.subject, state.tagNames, state.progressFilter, state.tags, state.showArchived)
             scrollToTop()
         }
     }

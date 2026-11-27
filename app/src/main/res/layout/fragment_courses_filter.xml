@@ -75,6 +75,14 @@
                 android:textColor="@color/daynight_textColor"
                 app:drawableEndCompat="@drawable/down_arrow"
                 app:drawableTint="@color/daynight_textColor" />
+            <CheckBox
+                android:id="@+id/chk_archived"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/padding_normal"
+                android:buttonTint="@color/daynight_textColor"
+                android:text="@string/show_archived"
+                android:textColor="@color/daynight_textColor" />
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 

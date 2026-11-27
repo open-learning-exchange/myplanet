@@ -13,6 +13,7 @@ internal fun MyCourse.toCourse(): Course {
         createdDate = this.createdDate,
         numberOfSteps = this.getNumberOfSteps(),
         isMyCourse = this.isMyCourse,
+        isArchived = this.isArchived,
         coverFileName = this.coverFileName,
         courseRev = this.courseRev
     )

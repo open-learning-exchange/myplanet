@@ -33,6 +33,9 @@ interface CourseDao {
     @RawQuery
     suspend fun filterByTitleNormal(query: SupportSQLiteQuery): List<MyCourse>
 
+    @Query("UPDATE courses SET isArchived = :archived WHERE courseId IN (:courseIds) OR id IN (:courseIds)")
+    suspend fun setArchived(courseIds: List<String>, archived: Boolean)
+
     @Upsert suspend fun upsertAll(items: List<MyCourse>)
     @Upsert fun upsertAllBlocking(items: List<MyCourse>)
     @Upsert suspend fun upsert(item: MyCourse)

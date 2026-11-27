@@ -580,6 +580,11 @@ class CoursesRepositoryImpl @Inject constructor(
         leaveCourses(courseIds, userId).getOrThrow()
     }
 
+    override suspend fun setCoursesArchived(courseIds: List<String>, archived: Boolean) {
+        if (courseIds.isEmpty()) return
+        courseIds.chunked(300).forEach { courseDao.setArchived(it, archived) }
+    }
+
     override suspend fun getCurrentProgress(steps: List<CourseStep?>?, userId: String?, courseId: String?): Int {
         return progressRepository.getCurrentProgress(steps, userId, courseId)
     }
@@ -735,6 +740,7 @@ class CoursesRepositoryImpl @Inject constructor(
             subjectLevel = GsonUtils.getString("subjectLevel", doc),
             createdDate = GsonUtils.getLong("createdDate", doc),
                         coverFileName = GsonUtils.getString("coverFileName", doc).takeIf { it.isNotEmpty() },
+                        isArchived = existingCourse?.isArchived ?: false,
                     )
 
         return ParsedCourseSyncPayload(course, parsedSteps, parsedExams, parsedQuestions)

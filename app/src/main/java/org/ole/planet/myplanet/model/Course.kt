@@ -9,6 +9,7 @@ data class Course(
     val createdDate: Long,
     val numberOfSteps: Int = 0,
     val isMyCourse: Boolean = false,
+    val isArchived: Boolean = false,
     val coverFileName: String? = null,
     val courseRev: String? = null
 )
