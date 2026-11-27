@@ -51,6 +51,41 @@ object ExamAnswerUtils {
         return map[id] ?: id
     }
 
+    private val OTHER_FOLLOW_UP = Regex("""^\W*if\s+others?\b""", RegexOption.IGNORE_CASE)
+    private val OTHER_CHOICE = Regex("""^\W*others?\b""", RegexOption.IGNORE_CASE)
+
+    fun isOtherFollowUp(question: ExamQuestion, previous: ExamQuestion?): Boolean {
+        if (previous == null) return false
+        val isTextQuestion = question.type.equals("input", ignoreCase = true) ||
+            question.type.equals("textarea", ignoreCase = true)
+        if (!isTextQuestion || !OTHER_FOLLOW_UP.containsMatchIn(question.body.orEmpty())) return false
+        return previous.hasOtherOption || otherChoices(previous).isNotEmpty()
+    }
+    
+    fun isOtherChoiceSelected(
+        question: ExamQuestion,
+        singleAnswer: String,
+        multipleAnswers: Map<String, String>
+    ): Boolean {
+        val others = otherChoices(question).toMutableList()
+        if (question.hasOtherOption) others.add("other" to "Other")
+        return others.any { (id, text) ->
+            singleAnswer.equals(id, ignoreCase = true) || singleAnswer.equals(text, ignoreCase = true) ||
+                multipleAnswers.keys.any { it.equals(text, ignoreCase = true) } ||
+                multipleAnswers.values.any { it.equals(id, ignoreCase = true) }
+        }
+    }
+
+    private fun otherChoices(question: ExamQuestion): List<Pair<String, String>> {
+        val choicesString = question.choices ?: return emptyList()
+        val choices = getStringAsJsonArray(choicesString)
+        return (0 until choices.size()).mapNotNull { i ->
+            val obj = choices[i].takeIf { it.isJsonObject }?.asJsonObject ?: return@mapNotNull null
+            val text = choiceDisplayValue(obj) ?: return@mapNotNull null
+            if (OTHER_CHOICE.containsMatchIn(text)) GsonUtils.getString("id", obj) to text else null
+        }
+    }
+
     fun checkCorrectAnswer(
         ans: String,
         listAns: Map<String, String>?,

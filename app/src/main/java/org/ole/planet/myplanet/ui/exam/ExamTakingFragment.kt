@@ -45,6 +45,7 @@ import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utils.CameraUtils.capturePhoto
 import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.ExamAnswerUtils
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.GsonUtils.getString
 import org.ole.planet.myplanet.utils.GsonUtils.getStringAsJsonArray
@@ -342,9 +343,22 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     private fun updateNavButtons() {
         binding.btnBack.visibility = if (currentIndex == 0) View.GONE else View.VISIBLE
         val isLastQuestion = currentIndex == (questions?.size ?: 0) - 1
-        val isCurrentQuestionAnswered = isQuestionAnswered()
+        val isCurrentQuestionAnswered = isQuestionAnswered() || isSkippableOtherFollowUp(currentIndex)
         binding.btnNext.visibility = if (isLastQuestion || !isCurrentQuestionAnswered) View.GONE else View.VISIBLE
         setButtonText()
+    }
+
+    private fun isSkippableOtherFollowUp(index: Int): Boolean {
+        val questionsList = questions ?: return false
+        val question = questionsList.getOrNull(index) ?: return false
+        val previous = questionsList.getOrNull(index - 1) ?: return false
+        if (!ExamAnswerUtils.isOtherFollowUp(question, previous)) return false
+        val previousAnswer = answerCache[previous.id]
+        return !ExamAnswerUtils.isOtherChoiceSelected(
+            previous,
+            previousAnswer?.singleAnswer.orEmpty(),
+            previousAnswer?.multipleAnswers.orEmpty()
+        )
     }
 
     private fun isQuestionAnswered(): Boolean {
@@ -695,7 +709,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                 }
 
                 saveCurrentAnswer()
-                if (!isQuestionAnswered()) {
+                if (!isQuestionAnswered() && !isSkippableOtherFollowUp(currentIndex)) {
                     toast(activity, getString(R.string.please_select_write_your_answer_to_continue), Toast.LENGTH_SHORT)
                     return
                 }
@@ -887,8 +901,10 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
     private fun findFirstUnansweredIndex(): Int {
         val questionsList = questions ?: return 0
-        val idx = questionsList.indexOfFirst { question ->
+        val idx = questionsList.indices.indexOfFirst { index ->
+            val question = questionsList[index]
             val cached = answerCache[question.id]
+            if (isSkippableOtherFollowUp(index)) return@indexOfFirst false
             when (question.type) {
                 "selectMultiple" -> cached?.multipleAnswers?.isNotEmpty() != true
                 else -> cached?.singleAnswer?.isNotEmpty() != true
