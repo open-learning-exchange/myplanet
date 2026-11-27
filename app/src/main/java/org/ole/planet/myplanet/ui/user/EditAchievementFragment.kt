@@ -15,6 +15,7 @@ import android.view.ViewGroup
 import android.widget.DatePicker
 import android.widget.EditText
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -62,6 +63,7 @@ import org.ole.planet.myplanet.ui.components.CheckboxAdapter
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerActivity
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerFragment
+import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.DialogUtils.getDialog
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.GsonUtils
@@ -92,6 +94,7 @@ class EditAchievementFragment : BaseContainerFragment() {
     private var pendingCvFilename: String? = null
     private var deleteCv = false
     private var selectedDobIso: String? = null
+    private var loadedFormState: FormState? = null
     private lateinit var pickCvLauncher: ActivityResultLauncher<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -130,13 +133,53 @@ class EditAchievementFragment : BaseContainerFragment() {
             val loaded = viewModel.achievement.filterNotNull().first()
             achievement = loaded
             populateAchievementData()
+            loadedFormState = currentFormState()
         }
+        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() = leaveScreen()
+        })
+    }
+
+    private data class FormState(
+        val fields: List<String>,
+        val achievements: String,
+        val references: String,
+        val sendToNation: Boolean,
+        val cv: String,
+    )
+
+    private fun currentFormState() = FormState(
+        fields = listOf(
+            binding.etFname, binding.etMname, binding.etLname, binding.etBirthplace,
+            binding.etPurpose, binding.etGoals, binding.etAchievement,
+        ).map { it.text.toString().trim() } + binding.txtDob.text.toString(),
+        achievements = achievementArray?.toString().orEmpty(),
+        references = referenceArray?.toString().orEmpty(),
+        sendToNation = binding.cbSendToNation.isChecked,
+        cv = "$selectedCvUri|$deleteCv",
+    )
+
+    private fun hasUnsavedChanges(): Boolean {
+        val loaded = loadedFormState ?: return false
+        return loaded != currentFormState()
+    }
+
+    private fun leaveScreen() {
+        if (!hasUnsavedChanges()) {
+            FragmentNavigator.popBackStack(parentFragmentManager)
+            return
+        }
+        requireContext().confirmDialog(
+            title = getString(R.string.discard_changes_title),
+            message = getString(R.string.discard_changes_message),
+            positiveText = getString(R.string.discard),
+            negativeText = getString(R.string.keep_editing),
+            onPositive = { FragmentNavigator.popBackStack(parentFragmentManager) },
+        )
     }
 
     private fun setListeners() {
-        binding.toolbar.setNavigationOnClickListener {
-            FragmentNavigator.popBackStack(parentFragmentManager)
-        }
+        binding.toolbar.setNavigationOnClickListener { leaveScreen() }
         binding.btnUpdate.setOnClickListener {
             val firstName = binding.etFname.text.toString().trim()
             val lastName = binding.etLname.text.toString().trim()
@@ -233,9 +276,7 @@ class EditAchievementFragment : BaseContainerFragment() {
                 }
             }
         }
-        binding.btnCancel.setOnClickListener {
-            FragmentNavigator.popBackStack(parentFragmentManager)
-        }
+        binding.btnCancel.setOnClickListener { leaveScreen() }
         binding.btnAchievement.setOnClickListener {
             showAddAchievementAlert(null)
         }

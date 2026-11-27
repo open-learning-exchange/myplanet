@@ -791,6 +791,10 @@
     <string name="audio_file_saved_in_database">Faylka audio-ka laga keydiyay data base-ka</string>
     <string name="connection_failed_reason">"Kooban oo aan la safri karin: sababta "</string>
     <string name="are_you_sure">Ma hubtaa?</string>
+    <string name="discard_changes_title">Ma tuurtaa isbeddellada?</string>
+    <string name="discard_changes_message">Isbeddelladaada aan la kaydin waa lumi doonaan.</string>
+    <string name="discard">Tuur</string>
+    <string name="keep_editing">Sii wad tafatirka</string>
     <string name="data_cleared">Macluumaadka waa la la abuuray</string>
     <string name="are_you_sure_want_to_delete_all_the_files">Ma hubtaa inaad tirtirto faylasha oo dhan?</string>
     <string name="unable_to_clear_files">Lama xarigo faylasha</string>

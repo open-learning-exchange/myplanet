@@ -791,6 +791,10 @@
     <string name="audio_file_saved_in_database">Archivo de audio guardado en la base de datos.</string>
     <string name="connection_failed_reason">"Error en la conexión: motivo "</string>
     <string name="are_you_sure">¿Estás seguro?</string>
+    <string name="discard_changes_title">¿Descartar cambios?</string>
+    <string name="discard_changes_message">Se perderán los cambios no guardados.</string>
+    <string name="discard">Descartar</string>
+    <string name="keep_editing">Seguir editando</string>
     <string name="data_cleared">Datos eliminados</string>
     <string name="are_you_sure_want_to_delete_all_the_files">¿Estás seguro de que quieres eliminar todos los archivos?</string>
     <string name="unable_to_clear_files">No se pueden eliminar los archivos</string>
