@@ -17,7 +17,7 @@ data class RoomUploadConfig<T : Any>(
 
     override val fetchPendingItems: suspend () -> List<T>,
 
-    override val serializer: UploadSerializer<T>,
+    override val serializer: PayloadSerializer<T>,
 
     override val idExtractor: (T) -> String?,
     override val dbIdExtractor: ((T) -> String?)? = null,

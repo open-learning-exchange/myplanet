@@ -605,8 +605,6 @@
     <string name="and">"Y "</string>
     <string name="more_course_s">" más curso(s)…\n"</string>
     <string name="retake_test">Volver a tomar el test [%d]</string>
-    <string name="do_you_want_to_join_this_course">¿Deseas unirte a este curso?</string>
-    <string name="join_this_course">Unirse a este curso</string>
     <string name="storage_running_low">"Almacenamiento bajo: "</string>
     <string name="storage_available">"Almacenamiento disponible: "</string>
     <string name="please_select_starting_date">"Por favor, selecciona la fecha de inicio: "</string>
@@ -955,7 +953,6 @@
     <string name="password_toggle_description">Alternar la visibilidad de la contraseña</string>
     <string name="skill_level">selecciona el nivel de habilidad</string>
     <string name="go_to_feedback_page">ir a la página de comentarios</string>
-    <string name="select_date_of_birth">selecciona la fecha de nacimiento</string>
     <string name="confirm_membership">confirma para convertirte en miembro</string>
     <string name="trial_period_ended">¡El período de prueba ha terminado! Por favor, completa el registro para continuar</string>
     <string name="drag">arrastrar %1$s</string>
@@ -1431,11 +1428,13 @@
 
     <string name="playback_speed">Velocidad de reproducción</string>
     <string name="playback_speed_format">%1$sx</string>
+    <string name="set">Aceptar</string>
+    <string name="add_cover_image">Añadir imagen de portada</string>
+    <string name="change_cover_image">Cambiar imagen de portada</string>
+    <string name="team_cover_image">Imagen de portada del equipo</string>
     <string name="usage_access_title">Permitir acceso de uso</string>
     <string name="usage_access_message">myPlanet informa a la Planet de tu comunidad cuánto tiempo se usa en este dispositivo, para que tu comunidad vea cómo se usa la aplicación. Android lo llama \"Acceso de uso\". En la siguiente pantalla, busca myPlanet y actívalo.</string>
     <string name="open_settings">Abrir ajustes</string>
     <string name="not_now">Ahora no</string>
-    <string name="add_cover_image">Añadir imagen de portada</string>
-    <string name="change_cover_image">Cambiar imagen de portada</string>
-    <string name="team_cover_image">Imagen de portada del equipo</string>
+
 </resources>

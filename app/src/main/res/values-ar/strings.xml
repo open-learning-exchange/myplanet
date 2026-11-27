@@ -605,8 +605,6 @@
     <string name="and">"و "</string>
     <string name="more_course_s">" دورة (دورات) أخرى…\n"</string>
     <string name="retake_test">إعادة الاختبار [%d]</string>
-    <string name="do_you_want_to_join_this_course">هل ترغب في الانضمام إلى هذه الدورة؟</string>
-    <string name="join_this_course">انضم إلى هذه الدورة</string>
     <string name="storage_running_low">"التخزين قليل: "</string>
     <string name="storage_available">"التخزين المتاح: "</string>
     <string name="please_select_starting_date">"يرجى تحديد تاريخ البدء: "</string>
@@ -959,7 +957,6 @@
     <string name="password_toggle_description">إظهار/إخفاء كلمة المرور</string>
     <string name="skill_level">اختر مستوى المهارة</string>
     <string name="go_to_feedback_page">انتقل إلى صفحة الملاحظات</string>
-    <string name="select_date_of_birth">اختر تاريخ الميلاد</string>
     <string name="confirm_membership">تأكيد الاشتراك</string>
     <string name="trial_period_ended">انتهت الفترة التجريبية! يرجى استكمال التسجيل للمتابعة</string>
     <string name="drag">اسحب %1$s</string>
@@ -1444,11 +1441,13 @@
 
     <string name="playback_speed">سرعة التشغيل</string>
     <string name="playback_speed_format">%1$sx</string>
+    <string name="set">تعيين</string>
+    <string name="add_cover_image">إضافة صورة الغلاف</string>
+    <string name="change_cover_image">تغيير صورة الغلاف</string>
+    <string name="team_cover_image">صورة غلاف الفريق</string>
     <string name="usage_access_title">السماح بالوصول إلى بيانات الاستخدام</string>
     <string name="usage_access_message">يُبلغ myPlanet منصة Planet الخاصة بمجتمعك بمدة استخدامه على هذا الجهاز، ليتمكن مجتمعك من معرفة كيفية استخدام التطبيق. يسمي Android هذا \"الوصول إلى بيانات الاستخدام\". في الشاشة التالية، ابحث عن myPlanet وفعّله.</string>
     <string name="open_settings">فتح الإعدادات</string>
     <string name="not_now">ليس الآن</string>
-    <string name="add_cover_image">إضافة صورة الغلاف</string>
-    <string name="change_cover_image">تغيير صورة الغلاف</string>
-    <string name="team_cover_image">صورة غلاف الفريق</string>
+
 </resources>

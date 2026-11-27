@@ -624,8 +624,6 @@
     <string name="and">"And "</string>
     <string name="more_course_s">" more course(s)…\n"</string>
     <string name="retake_test">Retake Test [%d]</string>
-    <string name="do_you_want_to_join_this_course">Do you want to join this course?</string>
-    <string name="join_this_course">Join this course</string>
     <string name="storage_running_low">"Storage running low: "</string>
     <string name="storage_available">"Storage available: "</string>
     <string name="please_select_starting_date">"Please select starting date : "</string>
@@ -978,7 +976,6 @@
     <string name="password_toggle_description">Toggle password visibility</string>
     <string name="skill_level">select skill level</string>
     <string name="go_to_feedback_page">go to feedback page</string>
-    <string name="select_date_of_birth">select date of birth</string>
     <string name="confirm_membership">confirm to become a member</string>
     <string name="trial_period_ended">Trial period ended! Kindly complete registration to continue</string>
     <string name="guest_visit_limit_warning">You have 1 login remaining before you are blocked from logging in.</string>
@@ -1451,11 +1448,13 @@
 
     <string name="playback_speed">Playback Speed</string>
     <string name="playback_speed_format">%1$sx</string>
+    <string name="set">Set</string>
+    <string name="add_cover_image">Add Cover Image</string>
+    <string name="change_cover_image">Change Cover Image</string>
+    <string name="team_cover_image">Team cover image</string>
     <string name="usage_access_title">Allow usage access</string>
     <string name="usage_access_message">myPlanet reports how much time it is used on this device to your community\'s Planet, so your community can see how the app is used. Android calls this \"Usage access\". On the next screen, find myPlanet and turn it on.</string>
     <string name="open_settings">Open settings</string>
     <string name="not_now">Not now</string>
-    <string name="add_cover_image">Add Cover Image</string>
-    <string name="change_cover_image">Change Cover Image</string>
-    <string name="team_cover_image">Team cover image</string>
+
 </resources>
