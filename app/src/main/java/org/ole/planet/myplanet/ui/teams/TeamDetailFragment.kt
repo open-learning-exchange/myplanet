@@ -30,6 +30,7 @@ import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ChatPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.CoursesPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.DocumentsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.FinancesPage
+import org.ole.planet.myplanet.ui.teams.TeamPageConfig.LeaderboardPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.MembersPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.MissionPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.PlanPage
@@ -82,6 +83,7 @@ class TeamDetailFragment : BaseTeamFragment() {
             pages += CalendarPage
             pages += SurveyPage
             pages += if (isEnterprise) FinancesPage else CoursesPage
+            if (!isEnterprise) pages += LeaderboardPage
             if (isEnterprise) pages += ReportsPage
             pages += if (isEnterprise) DocumentsPage else ResourcesPage
         } else {
