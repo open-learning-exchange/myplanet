@@ -410,7 +410,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
     private suspend fun checkServerAndStartDownload(serverUrl: String) {
         val canReachServer = isServerReachable(serverUrl)
         if (canReachServer && defaultPref.getBoolean("beta_auto_download", false)) {
-            resourceDownloadCoordinator.startBackgroundDownload(
+            resourceDownloadCoordinator.startAutoDownload(
                 downloadAllFiles(resourcesRepository.getAllLibrariesToSync())
             )
         }

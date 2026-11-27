@@ -35,6 +35,7 @@ import okio.Timeout
 import okio.buffer
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -60,6 +61,7 @@ class DownloadWorkerTest {
     private lateinit var resourcesRepository: ResourcesRepository
     private lateinit var preferences: SharedPreferences
     private lateinit var fallbackUrlResolver: FallbackUrlResolver
+    private lateinit var syncDownloadPolicy: SyncDownloadPolicy
     private lateinit var worker: DownloadWorker
 
     @get:Rule
@@ -74,6 +76,7 @@ class DownloadWorkerTest {
         resourcesRepository = mockk(relaxed = true)
         preferences = mockk(relaxed = true)
         fallbackUrlResolver = mockk()
+        syncDownloadPolicy = mockk(relaxed = true)
         every { fallbackUrlResolver.resolve(any()) } returns null
 
         dispatcherProvider = mockk(relaxed = true)
@@ -100,7 +103,8 @@ class DownloadWorkerTest {
                 dispatcherProvider,
                 resourcesRepository,
                 preferences,
-                fallbackUrlResolver
+                fallbackUrlResolver,
+                syncDownloadPolicy
             )
         )
         coEvery { worker.setProgress(any()) } returns Unit
@@ -464,6 +468,49 @@ class DownloadWorkerTest {
     }
 
     @Test
+    fun `sync-owned files wait in the queue for Wi-Fi without touching the network`() = runTest(testDispatcher) {
+        val url = "http://example.com/resources/1/team-image.png"
+        // The same set answers for the queue and for the sync-owned set, so the URL is sync-owned.
+        every { preferences.getStringSet(any(), any()) } returns setOf(url)
+        every { syncDownloadPolicy.mustWaitForWifi() } returns true
+
+        val result = worker.doWork()
+
+        assertTrue(result is androidx.work.ListenableWorker.Result.Success)
+        coVerify(exactly = 0) { downloadRepository.downloadFileResponse(any(), any(), any(), any(), any()) }
+        verify(exactly = 0) { preferences.edit() }
+    }
+
+    @Test
+    fun `a sync-owned file over the size limit leaves the queue without its body being read`() = runTest(testDispatcher) {
+        val url = "http://example.com/resources/1/big-video.mp4"
+        every { preferences.getStringSet(any(), any()) } returns setOf(url)
+        val editor = mockk<SharedPreferences.Editor>(relaxed = true)
+        every { preferences.edit() } returns editor
+        every { editor.putStringSet(any(), any()) } returns editor
+        every { workerParams.inputData.getString("urls_key") } returns "url_list_key"
+        every { syncDownloadPolicy.isOverSizeLimit(any()) } returns true
+
+        val outputFile = File(temporaryFolder.newFolder("big"), "big-video.mp4")
+        mockkObject(FileUtils)
+        every { FileUtils.checkFileExist(any(), url) } returns false
+        every { FileUtils.getSDPathFromUrl(any(), url) } returns outputFile
+        val body = mockk<ResponseBody>(relaxed = true)
+        every { body.contentLength() } returns 200L * 1024 * 1024
+        coEvery { downloadRepository.downloadFileResponse(url, any(), any(), any(), any()) } returns DownloadResult.Success(body, 200)
+
+        worker.doWork()
+
+        verify(exactly = 0) { body.byteStream() }
+        verify(exactly = 0) { body.source() }
+        verify { body.close() }
+        verify { editor.putStringSet("url_list_key", emptySet()) }
+        assertFalse(outputFile.exists())
+
+        unmockkObject(FileUtils)
+    }
+
+    @Test
     fun `successful downloads are removed from the queue and failed ones stay`() = runTest(testDispatcher) {
         val done = "http://example.com/resources/1/done.txt"
         val failed = "http://example.com/resources/2/failed.txt"
@@ -505,7 +552,7 @@ class DownloadWorkerTest {
         val notificationManager = mockk<NotificationManager>(relaxed = true)
         every { context.getSystemService(Context.NOTIFICATION_SERVICE) } returns notificationManager
         val stoppable = spyk(
-            DownloadWorker(context, workerParams, downloadRepository, broadcastService, dispatcherProvider, resourcesRepository, preferences, fallbackUrlResolver)
+            DownloadWorker(context, workerParams, downloadRepository, broadcastService, dispatcherProvider, resourcesRepository, preferences, fallbackUrlResolver, syncDownloadPolicy)
         )
         coEvery { stoppable.setForeground(any()) } returns Unit
 

@@ -62,6 +62,9 @@ class DownloadService : Service() {
     @Inject
     lateinit var fallbackUrlResolver: FallbackUrlResolver
 
+    @Inject
+    lateinit var syncDownloadPolicy: SyncDownloadPolicy
+
     private var data = ByteArray(BUFFER_SIZE)
     private var outputFile: File? = null
     private var notificationBuilder: NotificationCompat.Builder? = null
@@ -97,6 +100,7 @@ class DownloadService : Service() {
 
     @Volatile
     private var stopped = false
+    private var skippedOverSizeLimit = false
 
     @VisibleForTesting
     internal var unreachablePrimaryBase: String? = null
@@ -157,13 +161,21 @@ class DownloadService : Service() {
             }
 
             processedUrls.add(nextUrl.url)
+            if (SyncDownloadPolicy.isSyncOwned(preferences, nextUrl.url) && syncDownloadPolicy.mustWaitForWifi()) {
+                // Left in the queue, not counted: a later sync on Wi-Fi picks it up.
+                Log.d(TAG, "processDownloadQueue: ${nextUrl.url.substringAfterLast('/')} waits for Wi-Fi")
+                continue
+            }
             sessionTotalCount++
             cachedRemainingCount = getRemainingCount()
             Log.d(TAG, "processDownloadQueue: [${sessionTotalCount}] ${nextUrl.url.substringAfterLast('/')} priority=${nextUrl.isPriority} remaining=$cachedRemainingCount")
 
             isCurrentDownloadPriority = nextUrl.isPriority
             updateNotificationForBatchDownload()
+            skippedOverSizeLimit = false
             val succeeded = initDownload(nextUrl.url, fromSync)
+            // A file over the sync size limit is dropped on purpose, so it does not count as a failed download.
+            if (skippedOverSizeLimit) sessionTotalCount--
             Log.d(TAG, "processDownloadQueue: [${sessionTotalCount}] succeeded=$succeeded completed=$sessionCompletedCount")
 
             if (succeeded) sessionCompletedCount++
@@ -342,6 +354,19 @@ class DownloadService : Service() {
         val isPartial = result.code == 206
         val contentLength = result.body.contentLength()
         Log.d(TAG, "tryDownload [$source]: $fileName responded contentLength=${if (contentLength == -1L) "unknown" else "${contentLength}B"} partial=$isPartial")
+
+        val totalBytes = if (isPartial) resumeOffset + contentLength else contentLength
+        if (contentLength >= 0 && SyncDownloadPolicy.isSyncOwned(preferences, originalDownloadUrl) &&
+            syncDownloadPolicy.isOverSizeLimit(totalBytes)
+        ) {
+            // Leaves the queue without reading the body; the resource still shows as not downloaded.
+            Log.d(TAG, "tryDownload [$source]: $fileName is ${totalBytes}B, over the sync download limit, skipping")
+            result.body.close()
+            deleteTempFile(url)
+            deleteValidatorFile(url)
+            skippedOverSizeLimit = true
+            return false
+        }
 
         val storageError = getStorageError(contentLength)
         if (storageError != null) {

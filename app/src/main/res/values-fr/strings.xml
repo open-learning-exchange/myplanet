@@ -1068,6 +1068,11 @@
     <string name="server_address_content_description">adresse du serveur : %1$s</string>
     <string name="select_theme_mode">sélectionner le mode de thème</string>
     <string name="beta_resources_auto_download">Téléchargement automatique des ressources bêta</string>
+    <string name="sync_downloads">Téléchargements pendant la synchronisation</string>
+    <string name="sync_download_wifi_only">Télécharger uniquement en Wi-Fi</string>
+    <string name="sync_download_wifi_only_summary">Les fichiers de la synchronisation attendent une connexion Wi-Fi</string>
+    <string name="sync_download_max_size">Taille maximale d\'un fichier téléchargé pendant la synchronisation</string>
+    <string name="sync_download_no_limit">Aucune limite</string>
     <string name="course_steps">Étapes du cours</string>
     <string name="to_access_this_feature_become_a_member">vous êtes actuellement un utilisateur invité. pour accéder à cette fonctionnalité, devenez membre.</string>
     <string name="sales">Ventes</string>
