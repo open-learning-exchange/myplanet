@@ -89,6 +89,7 @@ class TeamsTasksFilterAndStatusTest {
             teamDao = mockk(relaxed = true),
             courseDao = mockk(relaxed = true),
             courseStepDao = mockk(relaxed = true),
+            newsDao = mockk(relaxed = true),
             appDatabase = mockk(relaxed = true)
         )
     }

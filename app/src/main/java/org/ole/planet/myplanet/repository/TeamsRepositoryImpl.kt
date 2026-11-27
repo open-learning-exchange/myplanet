@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.data.room.dao.CourseDao
 import org.ole.planet.myplanet.data.room.dao.CourseStepDao
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
+import org.ole.planet.myplanet.data.room.dao.NewsDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
@@ -36,6 +37,7 @@ import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.JoinedMemberData
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.TaskStatus
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamLog
@@ -78,6 +80,7 @@ class TeamsRepositoryImpl @Inject constructor(
     private val teamDao: TeamDao,
     private val courseDao: CourseDao,
     private val courseStepDao: CourseStepDao,
+    private val newsDao: NewsDao,
     private val appDatabase: AppDatabase,
 ) : TeamsRepository, TeamsSyncRepository {
     override fun getTasksFlow(userId: String?): Flow<List<TeamTask>> {
@@ -1447,6 +1450,43 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun markTeamLogUploaded(localId: String, remoteId: String, rev: String): Boolean {
         return teamLogDao.markUploaded(localId, remoteId, rev) != 0
+    }
+
+    override fun getCommentsForTaskFlow(taskId: String): Flow<List<News>> {
+        return newsDao.getCommentsForParentFlow(taskId).flowOn(dispatcherProvider.default)
+    }
+
+    override fun getCommentsForTasksFlow(taskIds: List<String>): Flow<List<News>> {
+        return newsDao.getCommentsForParentsFlow(taskIds).flowOn(dispatcherProvider.default)
+    }
+
+    override suspend fun addComment(parentId: String, teamId: String?, message: String, user: UserEntity?): News =
+        withContext(dispatcherProvider.io) {
+            val news = News().apply {
+                id = UUID.randomUUID().toString()
+                this.message = message
+                time = Date().time
+                createdOn = user?.planetCode
+                avatar = ""
+                docType = "message"
+                userName = user?.name
+                parentCode = user?.parentCode
+                messagePlanetCode = user?.planetCode
+                messageType = "comment"
+                sharedBy = ""
+                viewableBy = if (teamId.isNullOrEmpty()) "" else "teams"
+                viewableId = teamId ?: ""
+                userId = user?.id
+                replyTo = parentId
+                this.user = if (user != null) gson.toJson(user.serialize()) else ""
+                imageUrls = emptyList()
+            }
+            newsDao.upsert(news)
+            news
+        }
+
+    override suspend fun deleteComment(commentId: String) = withContext(dispatcherProvider.io) {
+        newsDao.deleteById(commentId)
     }
 
     companion object {

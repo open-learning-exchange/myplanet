@@ -7,9 +7,12 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
+import org.ole.planet.myplanet.data.room.dao.NewsDao
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MeetupCreationParams
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.TimeProvider
@@ -18,6 +21,7 @@ import org.ole.planet.myplanet.utils.TimeProvider
 class EventsRepositoryImpl @Inject constructor(
     private val timeProvider: TimeProvider,
     private val meetupDao: MeetupDao,
+    private val newsDao: NewsDao,
     private val gson: Gson
 ) : EventsRepository, EventsSyncWriter {
 
@@ -187,6 +191,42 @@ class EventsRepositoryImpl @Inject constructor(
         meetup.updated = false
         meetupDao.upsert(meetup)
         return true
+    }
+
+    override fun getCommentsForMeetupFlow(meetupId: String): Flow<List<News>> {
+        return newsDao.getCommentsForParentFlow(meetupId)
+    }
+
+    override fun getCommentsForMeetupsFlow(meetupIds: List<String>): Flow<List<News>> {
+        return newsDao.getCommentsForParentsFlow(meetupIds)
+    }
+
+    override suspend fun addComment(parentId: String, teamId: String?, message: String, user: UserEntity?): News {
+        val news = News().apply {
+            id = UUID.randomUUID().toString()
+            this.message = message
+            time = timeProvider.now()
+            createdOn = user?.planetCode
+            avatar = ""
+            docType = "message"
+            userName = user?.name
+            parentCode = user?.parentCode
+            messagePlanetCode = user?.planetCode
+            messageType = "comment"
+            sharedBy = ""
+            viewableBy = if (teamId.isNullOrEmpty()) "" else "teams"
+            viewableId = teamId ?: ""
+            userId = user?.id
+            replyTo = parentId
+            this.user = if (user != null) gson.toJson(user.serialize()) else ""
+            imageUrls = emptyList()
+        }
+        newsDao.upsert(news)
+        return news
+    }
+
+    override suspend fun deleteComment(commentId: String) {
+        newsDao.deleteById(commentId)
     }
 
     companion object {

@@ -54,6 +54,12 @@ interface NewsDao {
     @Query("SELECT * FROM news WHERE replyTo = :newsId ORDER BY time DESC")
     suspend fun getReplies(newsId: String): List<News>
 
+    @Query("SELECT * FROM news WHERE replyTo = :parentId COLLATE NOCASE ORDER BY time ASC")
+    fun getCommentsForParentFlow(parentId: String): Flow<List<News>>
+
+    @Query("SELECT * FROM news WHERE replyTo IN (:parentIds) COLLATE NOCASE ORDER BY time ASC")
+    fun getCommentsForParentsFlow(parentIds: List<String>): Flow<List<News>>
+
     @Query("SELECT COUNT(*) FROM news WHERE replyTo = :newsId")
     suspend fun getReplyCount(newsId: String): Int
 
@@ -108,6 +114,9 @@ interface NewsDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(news: List<News>)
+
+    @Query("DELETE FROM news WHERE id = :id")
+    suspend fun deleteById(id: String)
 
     @Query("DELETE FROM news WHERE id IN (:ids)")
     suspend fun deleteByIdsInternal(ids: List<String>)

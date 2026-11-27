@@ -72,6 +72,7 @@ class TeamsRepositoryTaskSyncTest {
             db.teamDao(),
             mockk<CourseDao>(relaxed = true),
             mockk<CourseStepDao>(relaxed = true),
+            db.newsDao(),
             db,
         )
     }

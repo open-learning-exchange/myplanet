@@ -13,11 +13,17 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MeetupCreationParams
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.EventsRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.UserRepository
 
 @HiltViewModel
 class TeamCalendarViewModel @Inject constructor(
-    private val eventsRepository: EventsRepository
+    private val eventsRepository: EventsRepository,
+    private val userRepository: UserRepository,
+    private val teamsRepository: TeamsRepository
 ) : ViewModel() {
 
     private val _meetups = MutableStateFlow<List<Meetup>>(emptyList())
@@ -61,5 +67,34 @@ class TeamCalendarViewModel @Inject constructor(
             meetupLink = meetupLink,
             recurring = recurring
         )
+    }
+
+    fun getCommentsForMeetupFlow(meetupId: String): Flow<List<News>> {
+        return eventsRepository.getCommentsForMeetupFlow(meetupId)
+    }
+
+    fun getCommentsForMeetupsFlow(meetupIds: List<String>): Flow<List<News>> {
+        return eventsRepository.getCommentsForMeetupsFlow(meetupIds)
+    }
+
+    fun addComment(meetupId: String, teamId: String?, message: String) {
+        viewModelScope.launch {
+            val currentUser = userRepository.getUserModel()
+            eventsRepository.addComment(meetupId, teamId, message, currentUser)
+        }
+    }
+
+    fun deleteComment(commentId: String) {
+        viewModelScope.launch {
+            eventsRepository.deleteComment(commentId)
+        }
+    }
+
+    suspend fun getCurrentUser(): UserEntity? {
+        return userRepository.getUserModel()
+    }
+
+    suspend fun isTeamLeader(teamId: String, userId: String?): Boolean {
+        return teamsRepository.isTeamLeader(teamId, userId)
     }
 }

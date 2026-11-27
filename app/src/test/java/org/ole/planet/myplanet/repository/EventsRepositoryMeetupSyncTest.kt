@@ -39,7 +39,7 @@ class EventsRepositoryMeetupSyncTest {
         db = Room.inMemoryDatabaseBuilder(RuntimeEnvironment.getApplication(), AppDatabase::class.java)
             .allowMainThreadQueries().build()
         meetupDao = db.meetupDao()
-        repository = EventsRepositoryImpl(SystemTimeProvider(), meetupDao, Gson())
+        repository = EventsRepositoryImpl(SystemTimeProvider(), meetupDao, db.newsDao(), Gson())
     }
 
     @After
