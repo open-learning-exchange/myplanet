@@ -17,7 +17,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyLibrary
-import org.ole.planet.myplanet.ui.resources.DownloadOfferTracker
 import org.ole.planet.myplanet.utils.Utilities.toast
 
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
@@ -31,7 +30,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     lateinit var recyclerView: RecyclerView
     var tvMessage: View? = null
     lateinit var tvFragmentInfo: TextView
-    var tvDelete: TextView? = null
+    var tvDelete: View? = null
     var list: MutableList<LI>? = null
     var resources: List<MyLibrary>? = null
     var courseLib: String? = null
@@ -65,7 +64,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         if (isMyCourseLib) {
             tvDelete = v.findViewById(R.id.tv_delete)
             initDeleteButton()
-            v.findViewById<TextView>(R.id.tv_add)?.visibility = View.GONE
+            v.findViewById<View>(R.id.tv_add)?.visibility = View.GONE
         }
         tvMessage = v.findViewById(R.id.tv_message)
         selectedItems = mutableListOf()
@@ -82,29 +81,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             if (recyclerView.adapter != adapter) {
                 recyclerView.adapter = adapter
             }
-            if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
-                if (shouldShowDownloadDialog) {
-                    resources?.let { offerDownloads(it) }
-                }
-            }
             startPostponedEnterTransition()
             requireActivity().reportFullyDrawn()
-
-            if (isMyCourseLib && courseLib == null && !isSurvey) {
-                if (shouldShowDownloadDialog) {
-                    val userId = sharedPrefManager.getUserId().ifEmpty { "--" }
-                    val libraryList = resourcesRepository.getLibraryListForUser(userId)
-                    offerDownloads(libraryList)
-                }
-            }
-        }
-    }
-
-    private fun offerDownloads(libraries: List<MyLibrary?>) {
-        val userId = sharedPrefManager.getUserId().ifEmpty { "--" }
-        val ids = libraries.mapNotNull { it?.resourceId ?: it?.id }
-        if (ids.isNotEmpty() && DownloadOfferTracker.shouldOffer(userId, ids)) {
-            showDownloadDialog(libraries)
         }
     }
 
