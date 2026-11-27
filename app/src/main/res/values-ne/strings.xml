@@ -605,8 +605,6 @@
     <string name="and">"र "</string>
     <string name="more_course_s">" थप पाठ्यक्रमहरू…\n"</string>
     <string name="retake_test">पुन: टेस्ट दिनुहोस् [%d]</string>
-    <string name="do_you_want_to_join_this_course">के तपाइँ यो पाठ्यक्रममा सामिल हुन चाहनुहुन्छ?</string>
-    <string name="join_this_course">यो पाठ्यक्रममा सामिल होइनुहोस्</string>
     <string name="storage_running_low">"स्टोरेज गम्भीर रूपमा कम: "</string>
     <string name="storage_available">"स्टोरेज उपलब्ध: "</string>
     <string name="please_select_starting_date">"कृपया सुरु मिति छनौट गर्नुहोस्: "</string>
@@ -959,7 +957,6 @@
     <string name="password_toggle_description">पासवर्ड दृश्यता ट toggल गर्नुहोस्</string>
     <string name="skill_level">सीप स्तर छान्नुहोस्</string>
     <string name="go_to_feedback_page">प्रतिक्रिया पृष्ठमा जानुहोस्</string>
-    <string name="select_date_of_birth">जन्म मिति छान्नुहोस्</string>
     <string name="confirm_membership">सदस्य बन्न पुष्टि गर्नुहोस्</string>
     <string name="trial_period_ended">अनुमति अवधि समाप्त भयो! निरन्तरताको लागि दर्ता पूरा गर्नुहोस्</string>
     <string name="drag">%1$s तान्नुहोस्</string>
@@ -1431,6 +1428,10 @@
 
     <string name="playback_speed">प्लेब्याक गति</string>
     <string name="playback_speed_format">%1$sx</string>
+    <string name="set">सेट गर्नुहोस्</string>
+    <string name="add_cover_image">कभर तस्बिर थप्नुहोस्</string>
+    <string name="change_cover_image">कभर तस्बिर परिवर्तन गर्नुहोस्</string>
+    <string name="team_cover_image">टोलीको कभर तस्बिर</string>
     <plurals name="reply_count">
         <item quantity="one">%d जवाफ</item>
         <item quantity="other">%d जवाफहरू</item>
@@ -1439,7 +1440,5 @@
         <item quantity="one">%1$s (%2$d पटक खोलिएको)</item>
         <item quantity="other">%1$s (%2$d पटक खोलिएको)</item>
     </plurals>
-    <string name="add_cover_image">कभर तस्बिर थप्नुहोस्</string>
-    <string name="change_cover_image">कभर तस्बिर परिवर्तन गर्नुहोस्</string>
-    <string name="team_cover_image">टोलीको कभर तस्बिर</string>
+
 </resources>

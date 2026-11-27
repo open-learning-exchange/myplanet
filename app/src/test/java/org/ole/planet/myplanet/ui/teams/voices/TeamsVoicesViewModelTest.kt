@@ -61,14 +61,29 @@ class TeamsVoicesViewModelTest {
     @Test
     fun `markDiscussionsSeen updates notifications with countTopLevelByTeam`() = runTest(testDispatcher) {
         val teamId = "team123"
-        coEvery { voicesRepository.countTopLevelByTeam(teamId) } returns 5L
+        coEvery { userRepository.getUserModel() } returns UserEntity().apply { id = "org.couchdb.user:dewie" }
+        coEvery { voicesRepository.countTopLevelByTeam(teamId, "org.couchdb.user:dewie") } returns 5L
 
         viewModel.markDiscussionsSeen(teamId)
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { voicesRepository.countTopLevelByTeam(teamId) }
+        coVerify(exactly = 1) { voicesRepository.countTopLevelByTeam(teamId, "org.couchdb.user:dewie") }
         coVerify(exactly = 1) { notificationsRepository.updateTeamNotification(teamId, 5) }
         coVerify(exactly = 0) { voicesRepository.getFilteredNews(any()) }
+    }
+
+    @Test
+    fun `createTeamNews marks the team chat seen so the poster's own message is not unread`() = runTest(testDispatcher) {
+        val teamId = "team123"
+        val map = hashMapOf<String?, String>("viewInId" to teamId, "message" to "hi")
+        val user = UserEntity().apply { id = "org.couchdb.user:dewie" }
+        coEvery { voicesRepository.createTeamNews(map, user, emptyList()) } returns true
+        coEvery { voicesRepository.countTopLevelByTeam(teamId, "org.couchdb.user:dewie") } returns 6L
+
+        viewModel.createTeamNews(map, user, emptyList())
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { notificationsRepository.updateTeamNotification(teamId, 6) }
     }
 
     @Test

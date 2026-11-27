@@ -43,8 +43,8 @@ interface VoicesRepository : VoicesEditor, VoicesShareRepository {
     suspend fun getCommunityVoiceDateCount(startTime: Long, endTime: Long, userId: String?): Int
     suspend fun insertNewsList(docs: List<JsonObject>)
     suspend fun countTeamChats(teamId: String): Long
-    suspend fun countTopLevelByTeam(teamId: String): Long
-    suspend fun countTopLevelByTeams(teamIds: List<String>): Map<String, Long>
+    suspend fun countTopLevelByTeam(teamId: String, excludedUserId: String? = null): Long
+    suspend fun countTopLevelByTeams(teamIds: List<String>, excludedUserId: String? = null): Map<String, Long>
     suspend fun getPendingNewsLogUploads(): List<org.ole.planet.myplanet.model.NewsLog>
     suspend fun markNewsLogUploaded(localId: String, remoteId: String, rev: String): Boolean
 }

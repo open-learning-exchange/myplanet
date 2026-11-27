@@ -605,8 +605,6 @@
     <string name="and">Et </string>
     <string name="more_course_s">autre(s) cours…\n</string>
     <string name="retake_test">Repasser le test [%d]</string>
-    <string name="do_you_want_to_join_this_course">Voulez-vous rejoindre ce cours ?</string>
-    <string name="join_this_course">Rejoindre ce cours</string>
     <string name="storage_running_low">Espace de stockage presque plein: </string>
     <string name="storage_available">Espace de stockage disponible: </string>
     <string name="please_select_starting_date">Veuillez sélectionner la date de début: </string>
@@ -961,7 +959,6 @@
     <string name="password_toggle_description">Afficher/masquer le mot de passe</string>
     <string name="skill_level">Sélectionner le niveau de compétence</string>
     <string name="go_to_feedback_page">Aller à la page de commentaires</string>
-    <string name="select_date_of_birth">Sélectionner la date de naissance</string>
     <string name="confirm_membership">Confirmer l\'inscription</string>
     <string name="trial_period_ended">Période d\'essai terminée ! Veuillez terminer l\'inscription pour continuer</string>
     <string name="drag">glisser %1$s</string>
@@ -1436,6 +1433,10 @@
 
     <string name="playback_speed">Vitesse de lecture</string>
     <string name="playback_speed_format">%1$sx</string>
+    <string name="set">Valider</string>
+    <string name="add_cover_image">Ajouter une image de couverture</string>
+    <string name="change_cover_image">Changer l\'image de couverture</string>
+    <string name="team_cover_image">Image de couverture de l\'équipe</string>
     <plurals name="reply_count">
         <item quantity="one">%d réponse</item>
         <item quantity="many">%d réponses</item>
@@ -1446,7 +1447,5 @@
         <item quantity="many">%1$s (ouvert %2$d fois)</item>
         <item quantity="other">%1$s (ouvert %2$d fois)</item>
     </plurals>
-    <string name="add_cover_image">Ajouter une image de couverture</string>
-    <string name="change_cover_image">Changer l\'image de couverture</string>
-    <string name="team_cover_image">Image de couverture de l\'équipe</string>
+
 </resources>

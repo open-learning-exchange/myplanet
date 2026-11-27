@@ -605,8 +605,6 @@
     <string name="and">"Iyo "</string>
     <string name="more_course_s">" kursi dheer…\n"</string>
     <string name="retake_test">Dib u habayn Imtixaanka [%d]</string>
-    <string name="do_you_want_to_join_this_course">Ma rabtaa inaad ka qaadato kursigaan?</string>
-    <string name="join_this_course">Ka qaad kursigaan</string>
     <string name="storage_running_low">"Xaddida maaliyadeed waa tagaa: "</string>
     <string name="storage_available">"Xaddida maaliyadeed waa heli kara: "</string>
     <string name="please_select_starting_date">"Fadlan dooro taariikhda hore : "</string>
@@ -959,7 +957,6 @@
     <string name="password_toggle_description">Eka arrin erayga sirka</string>
     <string name="skill_level">Khibrad dooro</string>
     <string name="go_to_feedback_page">Bog aqoon bogagaadibka aad</string>
-    <string name="select_date_of_birth">Taariikhda dhalashada dooro</string>
     <string name="confirm_membership">Xaqiiji xubinnimada</string>
     <string name="trial_period_ended">Muddadii tijaabada ahayd way dhammaatay! Fadlan dhammaystir diiwaangelinta si aad u sii wadato</string>
     <string name="drag">jiid %1$s</string>
@@ -1431,6 +1428,10 @@
 
     <string name="playback_speed">Xawaaraha dib-u-daawashada</string>
     <string name="playback_speed_format">%1$sx</string>
+    <string name="set">Deji</string>
+    <string name="add_cover_image">Ku dar sawirka daboolka</string>
+    <string name="change_cover_image">Beddel sawirka daboolka</string>
+    <string name="team_cover_image">Sawirka daboolka kooxda</string>
     <plurals name="reply_count">
         <item quantity="one">%d jawaab</item>
         <item quantity="other">%d jawaabood</item>
@@ -1439,7 +1440,5 @@
         <item quantity="one">%1$s (la furay %2$d jeer)</item>
         <item quantity="other">%1$s (la furay %2$d jeer)</item>
     </plurals>
-    <string name="add_cover_image">Ku dar sawirka daboolka</string>
-    <string name="change_cover_image">Beddel sawirka daboolka</string>
-    <string name="team_cover_image">Sawirka daboolka kooxda</string>
+
 </resources>
