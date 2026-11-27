@@ -241,11 +241,11 @@ class ResourcesAdapter(
         if (flatPayloads.contains(PAYLOAD_SELECTION) || flatPayloads.contains(PAYLOAD_IDENTITY)) {
             when (holder) {
                 is GridViewHolder -> {
-                    bindSelectionAndDownload(holder.binding.checkbox, holder.binding.ivDownloaded, model)
+                    bindSelectionAndDownload(holder.binding.checkbox, holder.binding.ivDownloaded, holder.binding.ivShare, model)
                     if (flatPayloads.contains(PAYLOAD_IDENTITY)) bindClicks(holder.itemView, holder.binding.checkbox, model)
                 }
                 is ListViewHolder -> {
-                    bindSelectionAndDownload(holder.binding.checkbox, holder.binding.ivDownloaded, model)
+                    bindSelectionAndDownload(holder.binding.checkbox, holder.binding.ivDownloaded, holder.binding.ivShare, model)
                     if (flatPayloads.contains(PAYLOAD_IDENTITY)) bindClicks(holder.itemView, holder.binding.checkbox, model)
                 }
             }
@@ -263,7 +263,7 @@ class ResourcesAdapter(
         val type = ResourcesMediaType.classify(model.library)
         binding.title.text = model.item.title
         binding.tvMeta.text = ResourcesCardBinder.buildMetaLine(context, type, model.library.language, fileSize = null, mediaType = model.library.mediaType)
-        bindSelectionAndDownload(binding.checkbox, binding.ivDownloaded, model)
+        bindSelectionAndDownload(binding.checkbox, binding.ivDownloaded, binding.ivShare, model)
         bindClicks(holder.itemView, binding.checkbox, model)
         ResourcesCardBinder.setCoverColor(binding.coverContainer, type)
         binding.ivTypeIcon.setImageResource(ResourcesCardBinder.typeIconRes(type))
@@ -297,7 +297,7 @@ class ResourcesAdapter(
         val type = ResourcesMediaType.classify(model.library)
         binding.title.text = model.item.title
         binding.tvMeta.text = ResourcesCardBinder.buildMetaLine(context, type, model.library.language, fileSize = null, mediaType = model.library.mediaType)
-        bindSelectionAndDownload(binding.checkbox, binding.ivDownloaded, model)
+        bindSelectionAndDownload(binding.checkbox, binding.ivDownloaded, binding.ivShare, model)
         bindClicks(holder.itemView, binding.checkbox, model)
         ResourcesCardBinder.setCoverColor(binding.coverContainer, type)
         binding.ivTypeIcon.setImageResource(ResourcesCardBinder.typeIconRes(type))
@@ -367,7 +367,7 @@ class ResourcesAdapter(
         return ResourcesCardBinder.cachedFileLength(file, dispatcherProvider, fileLengthCache)
     }
 
-    private fun bindSelectionAndDownload(checkbox: CheckBox, ivDownloaded: ImageView, model: ResourceListModel) {
+    private fun bindSelectionAndDownload(checkbox: CheckBox, ivDownloaded: ImageView, ivShare: ImageView, model: ResourceListModel) {
         checkbox.isChecked = selectedItemIds.contains(model.item.id)
         checkbox.visibility = if (isGuest) View.GONE else View.VISIBLE
 
@@ -388,6 +388,17 @@ class ResourcesAdapter(
         }
         ivDownloaded.visibility = if (isResourceOpened && isOffline) View.INVISIBLE else View.VISIBLE
         if (!isOffline && partialDownloads.containsKey(model.item.id)) applyPartialIcon(ivDownloaded)
+        bindShare(ivShare, model, isOffline)
+    }
+
+    private fun bindShare(ivShare: ImageView, model: ResourceListModel, isOffline: Boolean) {
+        if (isOffline) {
+            ivShare.visibility = View.VISIBLE
+            ivShare.setOnClickListener { listener?.onShareClicked(model.item) }
+        } else {
+            ivShare.visibility = View.GONE
+            ivShare.setOnClickListener(null)
+        }
     }
 
     private fun bindClicks(itemView: View, checkbox: CheckBox, model: ResourceListModel) {

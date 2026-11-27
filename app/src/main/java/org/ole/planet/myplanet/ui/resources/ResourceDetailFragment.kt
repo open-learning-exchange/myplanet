@@ -149,9 +149,11 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
 
     private fun setupDownloadButton() {
         val isHtmlResource = library.mediaType == "HTML"
+        val isDownloaded = library.isResourceOffline()
         val shouldShowButton = isHtmlResource || !TextUtils.isEmpty(library.resourceLocalAddress)
 
         binding.btnDownload.visibility = if (shouldShowButton) View.VISIBLE else View.GONE
+        binding.btnShare.visibility = if (isDownloaded) View.VISIBLE else View.GONE
         updateDownloadButtonState()
     }
 
@@ -203,6 +205,12 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     }
 
     private fun setClickListeners() {
+        binding.btnShare.setOnClickListener {
+            val intent = android.content.Intent(requireContext(), P2pTransferActivity::class.java).apply {
+                putExtra("resourceId", library.id)
+            }
+            startActivity(intent)
+        }
         binding.btnDownload.setOnClickListener {
             val isHtmlResource = library.mediaType == "HTML"
             if (!isHtmlResource && TextUtils.isEmpty(library.resourceLocalAddress)) {
