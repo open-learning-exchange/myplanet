@@ -139,7 +139,7 @@ class WebViewActivity : AppCompatActivity() {
             displayZoomControls = false
             
             // Disable geolocation
-            if Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
                 setGeolocationEnabled(false)
             }
 
