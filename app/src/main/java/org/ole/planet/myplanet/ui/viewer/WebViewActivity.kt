@@ -143,28 +143,23 @@ class WebViewActivity : AppCompatActivity() {
                 setGeolocationEnabled(false)
             }
 
+            if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
+                WebSettingsCompat.setAlgorithmicDarkeningAllowed(this, false)
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                @Suppress("DEPRECATION")
+                forceDark = WebSettings.FORCE_DARK_OFF
+            }
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 val nightModeFlags = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
                 when (nightModeFlags) {
                     Configuration.UI_MODE_NIGHT_YES -> {
-                        if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
-                            WebSettingsCompat.setAlgorithmicDarkeningAllowed(this, true)
-                        } else {
-                            @Suppress("DEPRECATION")
-                            forceDark = WebSettings.FORCE_DARK_ON
-                        }
                         activityWebViewBinding.contentWebView.webTitle.setTextColor(ContextCompat.getColor(this@WebViewActivity, R.color.md_white_1000))
                         activityWebViewBinding.contentWebView.webSource.setTextColor(ContextCompat.getColor(this@WebViewActivity, R.color.md_white_1000))
                         activityWebViewBinding.contentWebView.contentWebView.setBackgroundColor(ContextCompat.getColor(this@WebViewActivity, R.color.md_black_1000))
                     }
 
                     Configuration.UI_MODE_NIGHT_NO -> {
-                        if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
-                            WebSettingsCompat.setAlgorithmicDarkeningAllowed(this, false)
-                        } else {
-                            @Suppress("DEPRECATION")
-                            forceDark = WebSettings.FORCE_DARK_OFF
-                        }
                         activityWebViewBinding.contentWebView.webTitle.setTextColor(ContextCompat.getColor(this@WebViewActivity, R.color.md_black_1000))
                         activityWebViewBinding.contentWebView.webSource.setTextColor(ContextCompat.getColor(this@WebViewActivity, R.color.md_black_1000))
                     }
@@ -237,11 +232,6 @@ class WebViewActivity : AppCompatActivity() {
                 return !checkUrlSafety(url) // Block unsafe URLs, allow safe ones
             }
 
-            override fun onPageFinished(view: WebView, url: String) {
-                super.onPageFinished(view, url)
-                applyNightMode(view)
-            }
-
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
                 if (assetLoader != null) {
                     val response = assetLoader.shouldInterceptRequest(request.url)
@@ -254,44 +244,6 @@ class WebViewActivity : AppCompatActivity() {
         }
     }
 
-    private fun applyNightMode(view: WebView) {
-        val nightModeFlags = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-        if (nightModeFlags == Configuration.UI_MODE_NIGHT_YES) {
-            view.evaluateJavascript(
-                """
-                    (function() {
-                        document.documentElement.setAttribute('dark', 'true');
-                        document.documentElement.style.backgroundColor = '#000';
-                        document.documentElement.style.color = '#FFF';
-                        const elements = document.querySelectorAll('*');
-                        elements.forEach(el => {
-                            if (window.getComputedStyle(el).color === 'rgb(0, 0, 0)') {
-                                el.style.color = '#FFF';
-                            }
-                        });
-                    })();
-                """.trimIndent(),
-                null
-            )
-        } else {
-            view.evaluateJavascript(
-                """
-                    (function() {
-                        document.documentElement.removeAttribute('dark');
-                        document.documentElement.style.backgroundColor = '#FFF';
-                        document.documentElement.style.color = '#000';
-                        const elements = document.querySelectorAll('*');
-                        elements.forEach(el => {
-                            if (window.getComputedStyle(el).color === 'rgb(255, 255, 255)') {
-                                el.style.color = '#000';
-                            }
-                        });
-                    })();
-                """.trimIndent(),
-                null
-            )
-        }
-    }
     private fun clearCookie() {
         val cookieManager = CookieManager.getInstance()
         cookieManager.removeAllCookies(null)

@@ -24,7 +24,7 @@
             android:padding="8dp"
             android:contentDescription="@string/finish"
             android:src="@android:drawable/ic_menu_close_clear_cancel"
-            ads:tint="#000000" />
+            ads:tint="@color/daynight_textColor" />
 
         <LinearLayout
             android:layout_width="0dp"
