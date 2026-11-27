@@ -30,7 +30,7 @@ object ExamAnswerUtils {
     fun getChoiceTextById(question: ExamQuestion, id: String): String {
         val choicesString = question.choices ?: return id
 
-        var map = choicesCache.get(choicesString)
+        var map = choicesCache[choicesString]
         if (map == null) {
             val mutableMap = mutableMapOf<String, String>()
             val choices = getStringAsJsonArray(choicesString)
@@ -45,7 +45,7 @@ object ExamAnswerUtils {
                 }
             }
             map = mutableMap
-            choicesCache.put(choicesString, map)
+            choicesCache[choicesString] = map
         }
 
         return map[id] ?: id
